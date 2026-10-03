@@ -1,0 +1,1490 @@
+{
+ "version": "2026.10.03",
+ "note": "Hours were read from each institution's published hours (LibCal pages for Rutgers, NJIT and Stevens; library websites for public libraries; a public listing for the café) on 3 October 2026 and are for the regular fall term. Seat counts are null wherever the venue does not publish one — levels are relative, so the app never needs them. Typical-day curves are per-kind estimates labelled as such. No venue is a partner; no endorsement is implied.",
+ "venues": [
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Public during the day. Rutgers ID at the door during finals 24-hour openings and late Rutgers-only hours.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/alexander-library",
+   "phone": "848-932-7851",
+   "notes": "Open 24 hours for stretches of finals week (announced each term). The lower atrium is the usual late-night area.",
+   "hoursNote": "Rutgers ID required during finals 24-hour periods; some late hours are Rutgers-only.",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "alexander-library",
+   "name": "Archibald S. Alexander Library",
+   "shortName": "Alexander Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "College Avenue",
+   "address": "169 College Ave, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.50495,
+   "lng": -74.45228,
+   "hours": [
+    {
+     "open": "11:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "21:00"
+    },
+    {
+     "open": "13:00",
+     "close": "18:00"
+    }
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "students-late",
+   "zones": [
+    {
+     "zoneId": "alex-2ab",
+     "name": "Quiet Areas",
+     "floor": "2A & 2B (north wing)",
+     "noise": "silent",
+     "seats": null,
+     "outlets": null,
+     "note": "Designated quiet areas.",
+     "source": "Alexander Library building directory"
+    },
+    {
+     "zoneId": "alex-ugrr",
+     "name": "Undergraduate Reading Room",
+     "floor": "1 (south wing)",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "source": "Alexander Library building directory"
+    },
+    {
+     "zoneId": "alex-dlc",
+     "name": "Digital Learning Commons",
+     "floor": "1 (north wing)",
+     "noise": "low",
+     "seats": null,
+     "outlets": "many",
+     "computers": 70,
+     "note": "62 Windows PCs, 8 Macs, 2 docking stations. Staffed Mon–Thu 8 AM–9 PM, Fri 8 AM–6 PM, Sun 1–9 PM.",
+     "source": "Rutgers NB IT computer labs page, fall 2026"
+    },
+    {
+     "zoneId": "alex-3",
+     "name": "Group Study Rooms",
+     "floor": "3 (north & south wings)",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "groupRooms": 1,
+     "note": "Bookable group study rooms.",
+     "source": "Alexander Library building directory"
+    },
+    {
+     "zoneId": "alex-b",
+     "name": "Lower-level study area & café",
+     "floor": "Basement",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "note": "Open study area in front of bound periodicals (Room 038); Scarlet Latte café.",
+     "source": "Alexander Library building directory"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing",
+    "cafe",
+    "late-night",
+    "solo-desks",
+    "big-tables"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page, building directory); Rutgers IT; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Public during the day; Rutgers ID may be required late in the evening.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/carr-library",
+   "phone": "848-445-3613",
+   "notes": "Formerly Kilmer Area Library (1971); named for James Dickson Carr, Rutgers' first African American graduate, by the Board of Governors on 8 Feb 2017. Reached from College Ave by the campus bus, not on foot — walk minutes shown are from the Livingston campus edge and will be optimistic.",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "carr-library",
+   "name": "James Dickson Carr Library",
+   "shortName": "Carr Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "Livingston",
+   "address": "75 Avenue E, Piscataway, NJ 08854",
+   "town": "Piscataway",
+   "lat": 40.52249,
+   "lng": -74.4374,
+   "hours": [
+    {
+     "open": "14:30",
+     "close": "22:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "19:00"
+    },
+    {
+     "open": "13:00",
+     "close": "18:00"
+    }
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "students-late",
+   "zones": [
+    {
+     "zoneId": "carr-1",
+     "name": "Tables, first floor",
+     "floor": "1",
+     "noise": "low",
+     "seats": null,
+     "outlets": "some",
+     "note": "Open tables for individuals and pairs.",
+     "source": "Carr Library locations page"
+    },
+    {
+     "zoneId": "carr-2",
+     "name": "Quiet carrels",
+     "floor": "2",
+     "noise": "silent",
+     "seats": null,
+     "outlets": null,
+     "note": "Individual carrels.",
+     "source": "Carr Library locations page"
+    },
+    {
+     "zoneId": "carr-gsr",
+     "name": "Group study rooms",
+     "floor": "1–2",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "groupRooms": 1,
+     "source": "Carr Library locations page"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing",
+    "solo-desks",
+    "big-tables"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, Carr locations page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Public during the day; Rutgers ID may be required late in the evening.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/library-science-medicine",
+   "phone": "848-445-3854",
+   "notes": "Busch campus; reached by campus bus from College Ave.",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "lsm",
+   "name": "Library of Science and Medicine",
+   "shortName": "LSM",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "Busch",
+   "address": "165 Bevier Rd, Piscataway, NJ 08854",
+   "town": "Piscataway",
+   "lat": 40.52481,
+   "lng": -74.46719,
+   "hours": [
+    {
+     "open": "14:30",
+     "close": "22:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "19:00"
+    },
+    {
+     "open": "13:00",
+     "close": "18:00"
+    }
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "students-late",
+   "zones": [
+    {
+     "zoneId": "lsm-main",
+     "name": "Reading areas",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Floor-by-floor noise policy is not published; ask at the desk. RWJ librarian service point is on the 3rd floor (Room 300b).",
+     "source": "LSM locations page"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, LSM locations page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Public during the day; Rutgers ID may be required late in the evening.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/douglass-library",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "douglass-library",
+   "name": "Mabel Smith Douglass Library",
+   "shortName": "Douglass Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "Douglass",
+   "address": "8 Chapel Dr, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.48573,
+   "lng": -74.43586,
+   "hours": [
+    {
+     "open": "14:30",
+     "close": "22:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "19:00"
+    },
+    {
+     "open": "13:00",
+     "close": "18:00"
+    }
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "students-late",
+   "zones": [
+    {
+     "zoneId": "doug-main",
+     "name": "Reading areas",
+     "floor": "1–2",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Floor-by-floor noise policy is not published; ask at the desk.",
+     "source": "Douglass Library locations page"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "medium",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/art-library",
+   "notes": "Pin is the Zimmerli building entrance.",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "art-library",
+   "name": "Art Library",
+   "shortName": "Art Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "College Avenue",
+   "address": "71 Hamilton St, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.50008,
+   "lng": -74.44579,
+   "hours": [
+    null,
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    null
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "art-rr",
+     "name": "Reading room",
+     "floor": "1",
+     "noise": "silent",
+     "seats": null,
+     "outlets": null,
+     "note": "Small branch library in the Zimmerli Art Museum building.",
+     "source": "Rutgers Libraries locations page"
+    }
+   ],
+   "amenities": [
+    "wifi-eduroam",
+    "solo-desks"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://sca.rutgers.edu/student-centers/hours-and-directions",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "busch-student-center",
+   "name": "Busch Student Center",
+   "shortName": "Busch SC",
+   "kind": "student-center",
+   "area": "new-brunswick",
+   "campus": "Busch",
+   "address": "604 Bartholomew Rd, Piscataway, NJ 08854",
+   "town": "Piscataway",
+   "lat": 40.52333,
+   "lng": -74.45886,
+   "hours": [
+    {
+     "open": "11:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "11:00",
+     "close": "24:00"
+    }
+   ],
+   "hoursSource": "Rutgers Student Centers & Activities — Hours and Directions (sca.rutgers.edu), read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "bsc-cove",
+     "name": "The Cove",
+     "floor": "1",
+     "noise": "low",
+     "seats": null,
+     "outlets": "some",
+     "note": "Study space; Mon–Fri 8 AM–11:59 PM, Sat–Sun 11 AM–11:59 PM.",
+     "source": "Rutgers Study Space Finder (webapps.rutgers.edu/study-spaces)"
+    },
+    {
+     "zoneId": "bsc-food",
+     "name": "Food court & lounges",
+     "floor": "1",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "source": "Rutgers SCA"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "food-nearby",
+    "big-tables"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers Student Centers & Activities; Rutgers Study Space Finder; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://sca.rutgers.edu/student-centers/hours-and-directions",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "livingston-student-center",
+   "name": "Livingston Student Center",
+   "shortName": "Livingston SC",
+   "kind": "student-center",
+   "area": "new-brunswick",
+   "campus": "Livingston",
+   "address": "84 Joyce Kilmer Ave, Piscataway, NJ 08854",
+   "town": "Piscataway",
+   "lat": 40.52358,
+   "lng": -74.43722,
+   "hours": [
+    {
+     "open": "11:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "11:00",
+     "close": "24:00"
+    }
+   ],
+   "hoursSource": "Rutgers Student Centers & Activities — Hours and Directions (sca.rutgers.edu), read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "lsc-space",
+     "name": "The Space",
+     "floor": "1",
+     "noise": "low",
+     "seats": null,
+     "outlets": "some",
+     "note": "Study space; Mon–Fri 8 AM–11:59 PM, Sat–Sun 11 AM–11:59 PM.",
+     "source": "Rutgers Study Space Finder"
+    },
+    {
+     "zoneId": "lsc-clc",
+     "name": "Collaborative Learning Center",
+     "floor": "1",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "source": "Rutgers Study Space Finder"
+    },
+    {
+     "zoneId": "lsc-court",
+     "name": "Courtyard (back patio, outdoor)",
+     "floor": "outside",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": null,
+     "note": "Listed as open 24 hours — outdoors, weather permitting.",
+     "source": "Rutgers Study Space Finder"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "food-nearby",
+    "big-tables"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers Student Centers & Activities; Rutgers Study Space Finder; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://sca.rutgers.edu/student-centers/hours-and-directions",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "college-ave-student-center",
+   "name": "College Avenue Student Center",
+   "shortName": "College Ave SC",
+   "kind": "student-center",
+   "area": "new-brunswick",
+   "campus": "College Avenue",
+   "address": "126 College Ave, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.50263,
+   "lng": -74.45251,
+   "hours": [
+    {
+     "open": "09:00",
+     "close": "24:00"
+    },
+    {
+     "open": "07:00",
+     "close": "24:00"
+    },
+    {
+     "open": "07:00",
+     "close": "24:00"
+    },
+    {
+     "open": "07:00",
+     "close": "24:00"
+    },
+    {
+     "open": "07:00",
+     "close": "24:00"
+    },
+    {
+     "open": "07:00",
+     "close": "24:00"
+    },
+    {
+     "open": "09:00",
+     "close": "24:00"
+    }
+   ],
+   "hoursSource": "Rutgers Student Centers & Activities — Hours and Directions (sca.rutgers.edu), read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "casc-lounge",
+     "name": "Lounges & food court",
+     "floor": "1–2",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": "some",
+     "source": "Rutgers SCA"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "food-nearby",
+    "big-tables"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Rutgers Student Centers & Activities; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.nbfpl.org/",
+   "phone": "(732) 745-5108",
+   "notes": "Carnegie library downtown; open to everyone, no student ID.",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "nbfpl",
+   "name": "New Brunswick Free Public Library",
+   "shortName": "New Brunswick Public Library",
+   "kind": "public-library",
+   "area": "new-brunswick",
+   "campus": "Downtown",
+   "address": "60 Livingston Ave, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.49138,
+   "lng": -74.44555,
+   "hours": [
+    null,
+    {
+     "open": "10:00",
+     "close": "21:00"
+    },
+    {
+     "open": "10:00",
+     "close": "21:00"
+    },
+    {
+     "open": "10:00",
+     "close": "21:00"
+    },
+    {
+     "open": "10:00",
+     "close": "21:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    }
+   ],
+   "hoursSource": "nbfpl.org home page, read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "nbfpl-main",
+     "name": "Reading areas",
+     "floor": "1–2",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Public library; no published zone policy.",
+     "source": "nbfpl.org"
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "computers"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "New Brunswick Free Public Library website; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "notes": "Not a StudySpace partner. Listed because students study here; hours come from a public listing and may be out of date.",
+   "hoursVerified": "2026-06-01",
+   "lastVerified": "2026-10-03",
+   "venueId": "hidden-grounds-easton",
+   "name": "Hidden Grounds Chai & Coffee House",
+   "shortName": "Hidden Grounds",
+   "kind": "cafe",
+   "area": "new-brunswick",
+   "campus": "College Avenue",
+   "address": "106 Easton Ave, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.49884,
+   "lng": -74.45175,
+   "hours": [
+    {
+     "open": "08:00",
+     "close": "18:00"
+    },
+    {
+     "open": "07:00",
+     "close": "18:00"
+    },
+    {
+     "open": "07:00",
+     "close": "18:00"
+    },
+    {
+     "open": "07:00",
+     "close": "18:00"
+    },
+    {
+     "open": "07:00",
+     "close": "18:00"
+    },
+    {
+     "open": "07:00",
+     "close": "18:00"
+    },
+    {
+     "open": "08:00",
+     "close": "18:00"
+    }
+   ],
+   "hoursSource": "Public listing (Yelp, June 2026) — not confirmed with the café",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "hg-main",
+     "name": "Café seating",
+     "floor": "1",
+     "noise": "chatty",
+     "seats": null,
+     "outlets": "some",
+     "note": "A café, not a library: buy something, and expect conversation."
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "food-nearby"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "verifiedBy": "Public listing (Yelp); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://npl.org/",
+   "phone": "(973) 733-7779",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "newark-public-library",
+   "name": "Newark Public Library — Main Library",
+   "shortName": "Newark Public Library",
+   "kind": "public-library",
+   "area": "newark",
+   "campus": "Downtown",
+   "address": "5 Washington St, Newark, NJ 07102",
+   "town": "Newark",
+   "lat": 40.74458,
+   "lng": -74.17072,
+   "hours": [
+    null,
+    {
+     "open": "09:00",
+     "close": "17:30"
+    },
+    {
+     "open": "09:00",
+     "close": "20:30"
+    },
+    {
+     "open": "09:00",
+     "close": "20:30"
+    },
+    {
+     "open": "09:00",
+     "close": "20:30"
+    },
+    {
+     "open": "09:00",
+     "close": "17:30"
+    },
+    {
+     "open": "09:00",
+     "close": "17:30"
+    }
+   ],
+   "hoursSource": "npl.org/about-the-library/hours, read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "npl-main",
+     "name": "Reading rooms",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Historic main library; several reading rooms. No published zone policy.",
+     "source": "npl.org"
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "computers",
+    "printing"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "newark-broad",
+    "newark-penn"
+   ],
+   "verifiedBy": "Newark Public Library website; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Entry with a current physical RU ID card or a physical government-issued ID.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://www.libraries.rutgers.edu/newark/visit-study",
+   "phone": "973-353-5161",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "dana-library",
+   "name": "John Cotton Dana Library",
+   "shortName": "Dana Library",
+   "kind": "library",
+   "area": "newark",
+   "campus": "Rutgers–Newark",
+   "address": "185 University Ave, Newark, NJ 07102",
+   "town": "Newark",
+   "lat": 40.74178,
+   "lng": -74.17501,
+   "hours": [
+    {
+     "open": "14:00",
+     "close": "22:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "18:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:30"
+    }
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "access": "students",
+   "zones": [
+    {
+     "zoneId": "dana-main",
+     "name": "Study floors",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Floor-by-floor noise policy not published. 4th floor is the Institute of Jazz Studies (archive, not study space).",
+     "source": "Rutgers Libraries Newark visit page"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "newark-penn",
+    "newark-broad"
+   ],
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, Newark visit page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "medium",
+   "exceptions": [],
+   "accessNote": "NJIT community; an ID may be checked at the door — confirm before travelling.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://library.njit.edu/",
+   "phone": "(973) 596-3206",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "njit-van-houten",
+   "name": "Robert W. Van Houten Library (NJIT)",
+   "shortName": "Van Houten Library",
+   "kind": "library",
+   "area": "newark",
+   "campus": "NJIT",
+   "address": "Central Avenue Building, University Heights, Newark, NJ 07102",
+   "town": "Newark",
+   "lat": 40.7438,
+   "lng": -74.17797,
+   "hours": [
+    {
+     "open": "13:00",
+     "close": "24:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "22:00"
+    },
+    {
+     "open": "10:00",
+     "close": "22:00"
+    }
+   ],
+   "hoursSource": "NJIT LibCal hours (njit.libcal.com/hours), weeks of 27 Sep and 4 Oct 2026",
+   "access": "students",
+   "zones": [
+    {
+     "zoneId": "vh-main",
+     "name": "Study floors",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Floor-by-floor noise policy not published.",
+     "source": "library.njit.edu"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing",
+    "late-night"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "newark-broad",
+    "newark-penn"
+   ],
+   "verifiedBy": "NJIT Library (LibCal hours, home page); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [
+    {
+     "from": "2026-08-13",
+     "to": "2026-10-04",
+     "label": "Closed for the historic renovation (phase 2)",
+     "hours": "closed",
+     "source": "hobokenlibrary.org/renovation; NJ Stage 29 Jul 2026"
+    },
+    {
+     "from": "2026-10-05",
+     "to": "2027-03-31",
+     "label": "Floors 2–3 reopened; 1st floor and mezzanine still under renovation",
+     "hours": null,
+     "source": "hobokenlibrary.org/renovation; NJ Stage 29 Jul 2026"
+    }
+   ],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://hobokenlibrary.org/",
+   "phone": "(201) 420-2346",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "hoboken-public-library",
+   "name": "Hoboken Public Library — Main Library",
+   "shortName": "Hoboken Public Library",
+   "kind": "public-library",
+   "area": "hoboken",
+   "campus": "Uptown",
+   "address": "500 Park Ave, Hoboken, NJ 07030",
+   "town": "Hoboken",
+   "lat": 40.74288,
+   "lng": -74.03228,
+   "hours": [
+    {
+     "open": "10:00",
+     "close": "15:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    }
+   ],
+   "hoursSource": "Regular hours from public listings (Apple Maps / Hoboken Girl), Oct 2026; renovation dates from hobokenlibrary.org/renovation and press (NJ Stage, 29 Jul 2026)",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "hpl-2",
+     "name": "Second & third floors",
+     "floor": "2–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "The floors reopened on 5 Oct 2026 while the 1897 interior on the first floor is restored.",
+     "source": "hobokenlibrary.org/renovation"
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "computers"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "The renovation adds accessible features; confirm current access with the library."
+   },
+   "stationIds": [
+    "hoboken-terminal"
+   ],
+   "verifiedBy": "Hoboken Public Library website and renovation page; press coverage; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://hobokenlibrary.org/",
+   "phone": "(201) 420-2346 x5301",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "hoboken-grand-street",
+   "name": "Hoboken Public Library — Grand Street Branch",
+   "shortName": "HPL Grand Street",
+   "kind": "public-library",
+   "area": "hoboken",
+   "campus": "Downtown",
+   "address": "124 Grand St, 2nd Floor, Hoboken, NJ 07030",
+   "town": "Hoboken",
+   "lat": 40.73879,
+   "lng": -74.03638,
+   "hours": [
+    null,
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "20:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    },
+    {
+     "open": "10:00",
+     "close": "17:00"
+    }
+   ],
+   "hoursSource": "hobokenlibrary.org home page, read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "hgs-main",
+     "name": "Branch reading area",
+     "floor": "2",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "source": "hobokenlibrary.org"
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "computers"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "hoboken-terminal"
+   ],
+   "verifiedBy": "Hoboken Public Library website; coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "accessNote": "Stevens community; visitors should check with the library.",
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://library.stevens.edu/",
+   "phone": "201-216-5200",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "stevens-williams-library",
+   "name": "Samuel C. Williams Library (Stevens)",
+   "shortName": "Williams Library",
+   "kind": "library",
+   "area": "hoboken",
+   "campus": "Stevens",
+   "address": "1 Castle Point Terrace, Hoboken, NJ 07030",
+   "town": "Hoboken",
+   "lat": 40.74481,
+   "lng": -74.02533,
+   "hours": [
+    {
+     "open": "12:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "26:00"
+    },
+    {
+     "open": "08:00",
+     "close": "22:00"
+    },
+    {
+     "open": "10:00",
+     "close": "22:00"
+    }
+   ],
+   "hoursSource": "Stevens LibCal hours (stevens.libcal.com/hours), week of 27 Sep 2026",
+   "access": "students",
+   "zones": [
+    {
+     "zoneId": "scw-main",
+     "name": "Study floors",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Reopened in late August 2026 after a summer renovation (closed 16 May – 23 Aug 2026).",
+     "source": "library.stevens.edu"
+    }
+   ],
+   "amenities": [
+    "outlets",
+    "wifi-eduroam",
+    "group-rooms",
+    "computers",
+    "printing",
+    "late-night"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "hoboken-terminal"
+   ],
+   "verifiedBy": "Stevens Institute of Technology Library (LibCal hours, research guides); coordinates OSM/Nominatim"
+  },
+  {
+   "coordConfidence": "high",
+   "exceptions": [],
+   "capacity": null,
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "website": "https://princetonlibrary.org/",
+   "phone": "609-924-9529",
+   "hoursVerified": "2026-10-03",
+   "lastVerified": "2026-10-03",
+   "venueId": "princeton-public-library",
+   "name": "Princeton Public Library",
+   "shortName": "Princeton Public Library",
+   "kind": "public-library",
+   "area": "princeton",
+   "campus": "Downtown",
+   "address": "65 Witherspoon St, Princeton, NJ 08542",
+   "town": "Princeton",
+   "lat": 40.35172,
+   "lng": -74.6603,
+   "hours": [
+    {
+     "open": "12:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "20:00"
+    },
+    {
+     "open": "09:00",
+     "close": "20:00"
+    },
+    {
+     "open": "09:00",
+     "close": "20:00"
+    },
+    {
+     "open": "09:00",
+     "close": "20:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    }
+   ],
+   "hoursSource": "princetonlibrary.org home page, read 3 Oct 2026",
+   "access": "public",
+   "zones": [
+    {
+     "zoneId": "ppl-main",
+     "name": "Reading areas",
+     "floor": "1–3",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Public library with quiet study rooms; no published zone policy.",
+     "source": "princetonlibrary.org"
+    }
+   ],
+   "amenities": [
+    "wifi-public",
+    "outlets",
+    "computers",
+    "printing",
+    "cafe"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "stationIds": [
+    "princeton",
+    "princeton-junction"
+   ],
+   "verifiedBy": "Princeton Public Library website; coordinates OSM/Nominatim"
+  }
+ ]
+}

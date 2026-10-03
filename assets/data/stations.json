@@ -1,0 +1,12 @@
+{
+  "version": "2026.10.03",
+  "attribution": "Coordinates: © OpenStreetMap contributors (ODbL 1.0) via Nominatim, 3 Oct 2026. Modes from NJ Transit / PATH / Amtrak public system maps.",
+  "stations": [
+    { "stationId": "new-brunswick", "name": "New Brunswick", "lat": 40.49684, "lng": -74.44619, "modes": ["NJ Transit", "Amtrak"], "lines": ["Northeast Corridor"], "area": "new-brunswick" },
+    { "stationId": "newark-penn", "name": "Newark Penn Station", "lat": 40.7346, "lng": -74.16396, "modes": ["NJ Transit", "Amtrak", "PATH", "Newark Light Rail"], "lines": ["Northeast Corridor", "North Jersey Coast", "Raritan Valley", "PATH Newark–WTC"], "area": "newark" },
+    { "stationId": "newark-broad", "name": "Newark Broad Street", "lat": 40.7473, "lng": -74.17189, "modes": ["NJ Transit", "Newark Light Rail"], "lines": ["Morris & Essex", "Montclair-Boonton"], "area": "newark" },
+    { "stationId": "hoboken-terminal", "name": "Hoboken Terminal", "lat": 40.73391, "lng": -74.0298, "modes": ["NJ Transit", "PATH", "HBLR"], "lines": ["Main/Bergen", "Pascack Valley", "Morris & Essex", "PATH Hoboken–33 St / WTC", "Hudson-Bergen Light Rail"], "area": "hoboken" },
+    { "stationId": "princeton", "name": "Princeton", "lat": 40.34214, "lng": -74.65883, "modes": ["Princeton Dinky"], "lines": ["Princeton Branch to Princeton Junction"], "area": "princeton" },
+    { "stationId": "princeton-junction", "name": "Princeton Junction", "lat": 40.31599, "lng": -74.62412, "modes": ["NJ Transit", "Amtrak", "Princeton Dinky"], "lines": ["Northeast Corridor"], "area": "princeton" }
+  ]
+}
