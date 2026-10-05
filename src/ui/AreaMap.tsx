@@ -11,9 +11,10 @@ import { MAPS } from '@/data/mapData';
 import { AREA_BBOX, AREA_NAME } from '@/domain/areas';
 import { lineToPath, makeProjection } from '@/domain/geo';
 import type { Area, LiveLevel, LocationFix, Station, Venue } from '@/domain/types';
+import { t } from '@/i18n';
 
 import { levelTone } from './level-widgets';
-import { colors, fonts, toneColor } from './theme';
+import { colors, fonts, toneColor, type } from './theme';
 
 export function AreaMap({
   area,
@@ -68,7 +69,7 @@ export function AreaMap({
   const youInside = !!you && you.x >= 0 && you.x <= width && you.y >= 0 && you.y <= height;
 
   return (
-    <View style={[styles.wrap, { width, height }]} accessibilityLabel={`Map of ${AREA_NAME[area]} with ${pins.length} study spots${youInside ? ' and your position' : ''}`} accessibilityRole="image">
+    <View style={[styles.wrap, { width, height }]} accessibilityLabel={`${t('map.alt', { area: AREA_NAME[area], n: pins.length })}${youInside ? t('map.altYou') : ''}`} accessibilityRole="image">
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
         <Rect x={0} y={0} width={width} height={height} fill="#F7F8FA" />
         <G>
@@ -99,10 +100,10 @@ export function AreaMap({
         <G>
           {labels.map((l) => (
             <G key={l.name}>
-              <SvgText x={l.x} y={l.y} fontSize={9.5} fontWeight="600" fill="#F7F8FA" stroke="#F7F8FA" strokeWidth={3} fontFamily={fonts.sans} textAnchor="middle">
+              <SvgText x={l.x} y={l.y} fontSize={type.mapLabel.fontSize} fontWeight={type.mapLabel.fontWeight} fill="#F7F8FA" stroke="#F7F8FA" strokeWidth={3} fontFamily={fonts.sans} textAnchor="middle">
                 {l.name}
               </SvgText>
-              <SvgText x={l.x} y={l.y} fontSize={9.5} fontWeight="600" fill={colors.ink2} fontFamily={fonts.sans} textAnchor="middle">
+              <SvgText x={l.x} y={l.y} fontSize={type.mapLabel.fontSize} fontWeight={type.mapLabel.fontWeight} fill={colors.ink2} fontFamily={fonts.sans} textAnchor="middle">
                 {l.name}
               </SvgText>
             </G>
@@ -112,10 +113,10 @@ export function AreaMap({
           {stationPins.map(({ s, x, y }) => (
             <G key={s.stationId}>
               <Rect x={x - 7} y={y - 7} width={14} height={14} rx={3} fill={colors.ink} />
-              <SvgText x={x} y={y + 3.5} fontSize={9} fontWeight="800" fill={colors.white} textAnchor="middle" fontFamily={fonts.sans}>
+              <SvgText x={x} y={y + 3.5} fontSize={type.mapPin.fontSize} fontWeight={type.mapPin.fontWeight} fill={colors.white} textAnchor="middle" fontFamily={fonts.sans}>
                 T
               </SvgText>
-              <SvgText x={x + 10} y={y + 3.5} fontSize={9.5} fontWeight="600" fill={colors.ink} fontFamily={fonts.sans}>
+              <SvgText x={x + 10} y={y + 3.5} fontSize={type.mapLabel.fontSize} fontWeight={type.mapLabel.fontWeight} fill={colors.ink} fontFamily={fonts.sans}>
                 {s.name}
               </SvgText>
             </G>
@@ -129,7 +130,7 @@ export function AreaMap({
             return (
               <G key={v.venueId} onPress={onSelect ? () => onSelect(v) : undefined}>
                 <Circle cx={x} cy={y} r={on ? 13 : 10} fill={fill} stroke={colors.white} strokeWidth={2} />
-                <SvgText x={x} y={y + 4} fontSize={10} fontWeight="800" fill={colors.white} textAnchor="middle" fontFamily={fonts.sans}>
+                <SvgText x={x} y={y + 4} fontSize={type.mapPin.fontSize} fontWeight={type.mapPin.fontWeight} fill={colors.white} textAnchor="middle" fontFamily={fonts.sans}>
                   {live && live.open ? String(live.level + 1) : '–'}
                 </SvgText>
               </G>
@@ -144,21 +145,21 @@ export function AreaMap({
         ) : null}
         <G transform={`translate(${width - 22} 26)`}>
           <Path d="M0 -10 L5 6 L0 3 L-5 6 Z" fill={colors.ink2} />
-          <SvgText x={0} y={18} fontSize={9} fontWeight="800" fill={colors.ink2} textAnchor="middle">
+          <SvgText x={0} y={18} fontSize={type.mapPin.fontSize} fontWeight={type.mapPin.fontWeight} fill={colors.ink2} textAnchor="middle">
             N
           </SvgText>
         </G>
       </Svg>
       <View style={styles.tag} pointerEvents="none">
-        <Text style={styles.tagText}>{AREA_NAME[area]}</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.tagText}>{AREA_NAME[area]}</Text>
       </View>
       {location && !youInside ? (
         <View style={styles.offMap}>
-          <Text style={styles.offMapText}>Your position is off this map</Text>
+          <Text maxFontSizeMultiplier={1.3} style={styles.offMapText}>{t('map.offMap')}</Text>
         </View>
       ) : null}
       <View style={styles.attrib} pointerEvents="none">
-        <Text style={styles.attribText}>© OpenStreetMap contributors</Text>
+        <Text maxFontSizeMultiplier={1.3} style={styles.attribText}>© OpenStreetMap contributors</Text>
       </View>
     </View>
   );
@@ -170,9 +171,9 @@ export function MapLegend({ hasPosition }: { hasPosition: boolean }) {
     <View style={styles.legend}>
       {(
         [
-          ['green', '1–2 Empty · Chill'],
-          ['amber', '3 Filling'],
-          ['red', '4–5 Packed · Full'],
+          ['green', t('map.legend.low')],
+          ['amber', t('map.legend.mid')],
+          ['red', t('map.legend.high')],
         ] as const
       ).map(([tone, label]) => (
         <View key={tone} style={styles.legendItem}>
@@ -182,7 +183,7 @@ export function MapLegend({ hasPosition }: { hasPosition: boolean }) {
       ))}
       <View style={styles.legendItem}>
         <View style={[styles.legendDot, { backgroundColor: colors.tint, opacity: hasPosition ? 1 : 0.35 }]} />
-        <Text style={styles.legendText}>{hasPosition ? 'You' : 'You (no fix)'}</Text>
+        <Text style={styles.legendText}>{hasPosition ? t('map.legend.you') : t('map.legend.noFix')}</Text>
       </View>
     </View>
   );
@@ -191,13 +192,13 @@ export function MapLegend({ hasPosition }: { hasPosition: boolean }) {
 const styles = StyleSheet.create({
   wrap: { backgroundColor: '#F7F8FA', borderRadius: 12, overflow: 'hidden' },
   attrib: { position: 'absolute', left: 8, bottom: 8, backgroundColor: 'rgba(255,255,255,0.85)', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5 },
-  attribText: { fontSize: 9.5, color: colors.ink2 },
+  attribText: { ...type.mapAttribution },
   tag: { position: 'absolute', top: 8, left: 8 },
-  tagText: { fontSize: 13, fontWeight: '600', color: colors.ink2, letterSpacing: -0.08 },
+  tagText: { ...type.mapTag },
   offMap: { position: 'absolute', top: 30, left: 8, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  offMapText: { fontSize: 11, fontWeight: '700', color: colors.ink2 },
+  offMapText: { ...type.caption2 },
   legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: colors.white },
-  legendText: { fontSize: 12.5, color: colors.ink2, fontWeight: '600' },
+  legendText: { ...type.legend },
 });

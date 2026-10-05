@@ -10,7 +10,15 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "supportsTablet": false,
-      "bundleIdentifier": "com.27363.studyspace"
+      "bundleIdentifier": "com.27363.studyspace",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "processing"
+        ],
+        "BGTaskSchedulerPermittedIdentifiers": [
+          "com.expo.modules.backgroundtask.processing"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -53,11 +61,17 @@
           "defaultChannel": "studyspace"
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-background-task",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "locales": {
+      "en": "./assets/locales/en.json",
+      "es": "./assets/locales/es.json"
     }
   }
 }

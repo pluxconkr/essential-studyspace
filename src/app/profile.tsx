@@ -6,7 +6,9 @@ import { useRouter } from 'expo-router';
 import { Text, View, useWindowDimensions } from 'react-native';
 
 import { formatHourBand, goalRate } from '@/domain/focus';
+import { wastedTrips } from '@/domain/honesty';
 import { formatDuration } from '@/domain/time';
+import { t, tn } from '@/i18n';
 import { useAppState } from '@/store/appStore';
 import { useFocusStats } from '@/store/derived';
 import { HourBars } from '@/ui/level-widgets';
@@ -20,47 +22,50 @@ export default function ProfileScreen() {
   const stats = useFocusStats();
   const checkIns = useAppState((s) => s.myCheckIns);
   const rate = goalRate(stats.week);
+  const honesty = wastedTrips(checkIns);
   const chartWidth = Math.min(width - GUTTER * 2 - CELL_PAD * 2, 600);
 
   return (
-    <Screen title="Your week" largeTitle="Your week" subtitle={`${stats.streak}-day streak · ${formatDuration(stats.week.focusSeconds)} focused in the last 7 days`} fallback="/">
+    <Screen title={t('profile.nav')} largeTitle={t('profile.nav')} subtitle={t('profile.subtitle', { n: stats.streak, time: formatDuration(stats.week.focusSeconds) })} fallback="/">
       <Group style={{ marginTop: 8 }}>
         <View style={{ paddingLeft: CELL_PAD }}>
-          <KeyValue k="Focused time" v={formatDuration(stats.week.focusSeconds)} />
-          <KeyValue k="Sessions" v={String(stats.week.sessions)} />
-          <KeyValue k="Goals completed" v={rate === null ? 'no goals set' : `${rate}% (${stats.week.goalsDone} of ${stats.week.goalsTotal})`} />
-          <KeyValue k="Crowd check-ins" v={`${checkIns.length} in the last 30 days`} />
-          <KeyValue k="Streak" v={`${stats.streak} day${stats.streak === 1 ? '' : 's'} with 25+ min`} last />
+          <KeyValue k={t('profile.focusedTime')} v={formatDuration(stats.week.focusSeconds)} />
+          <KeyValue k={t('profile.sessions')} v={String(stats.week.sessions)} />
+          <KeyValue k={t('profile.goals')} v={rate === null ? t('profile.noGoals') : t('profile.goalsValue', { pct: rate, done: stats.week.goalsDone, total: stats.week.goalsTotal })} />
+          <KeyValue k={t('profile.checkIns')} v={t('profile.checkInsValue', { n: checkIns.length })} />
+          <KeyValue k={t('profile.streak')} v={tn(stats.streak, 'profile.streakValue')} />
+          <KeyValue k={t('profile.honesty')} v={honesty.total === 0 ? t('profile.honestyNone') : t('profile.honestyValue', { a: honesty.withinOne, b: honesty.total })} last />
         </View>
       </Group>
 
-      <SectionHeader>When you actually focus</SectionHeader>
+      <SectionHeader>{t('profile.whenFocus')}</SectionHeader>
       <Group padded>
         {stats.log.length === 0 ? (
-          <Text style={type.subheadline}>No sessions yet. The chart fills in as you study.</Text>
+          <Text style={type.subheadline}>{t('profile.noSessions')}</Text>
         ) : (
           <>
             <HourBars values={stats.byHour} width={chartWidth} highlightStart={stats.best?.startHour ?? null} />
-            <Text style={[type.footnote, { marginTop: 6 }]}>{stats.best ? `Best window: ${formatHourBand(stats.best.startHour)} — ${formatDuration(stats.best.seconds)} of focus logged there.` : ''} StudySpace uses this to suggest when to study, not just where.</Text>
+            <Text style={[type.footnote, { marginTop: 6 }]}>{stats.best ? t('profile.bestWindow', { band: formatHourBand(stats.best.startHour), time: formatDuration(stats.best.seconds) }) : ''}</Text>
           </>
         )}
       </Group>
 
-      <SectionHeader>Where you focus</SectionHeader>
+      <SectionHeader>{t('profile.whereFocus')}</SectionHeader>
       <Group>
         {stats.byVenue.length === 0 ? (
-          <Cell icon="pin" iconColor={colors.ink2} title="Nowhere yet" subtitle="Pick a spot when you start a session." last />
+          <Cell icon="pin" iconColor={colors.ink2} title={t('profile.nowhere')} subtitle={t('profile.pickSpot')} last />
         ) : (
-          stats.byVenue.slice(0, 6).map((v, i) => <Cell key={v.venueId ?? 'none'} icon={v.venueId ? 'library' : 'solo'} title={v.name} subtitle={`${v.sessions} session${v.sessions === 1 ? '' : 's'}`} value={formatDuration(v.seconds)} last={i === Math.min(6, stats.byVenue.length) - 1} />)
+          stats.byVenue.slice(0, 6).map((v, i) => <Cell key={v.venueId ?? 'none'} icon={v.venueId ? 'library' : 'solo'} title={v.name} subtitle={tn(v.sessions, 'profile.sessionsCount')} value={formatDuration(v.seconds)} last={i === Math.min(6, stats.byVenue.length) - 1} />)
         )}
       </Group>
-      <SectionFooter>Your focus log is yours — exportable from Offline data, deletable, and never sold to venues or shared with schools. There is no leaderboard; a precise score turns into a status game.</SectionFooter>
+      <SectionFooter>{t('profile.staysFooter')}</SectionFooter>
 
-      <SectionHeader>Settings</SectionHeader>
+      <SectionHeader>{t('profile.settings')}</SectionHeader>
       <Group>
-        <Cell icon="settings" title="Preferences" subtitle="Area, station, noise, outlets, step-free" accessory="chevron" onPress={() => router.push('/prefs')} />
-        <Cell icon="calendar" title="Free blocks" subtitle="Your gaps between classes" accessory="chevron" onPress={() => router.push('/blocks')} />
-        <Cell icon="download" title="Offline data & demo" subtitle="What is saved, sharing, notifications, scenarios, reset" accessory="chevron" onPress={() => router.push('/data')} last />
+        <Cell icon="settings" title={t('profile.preferences')} accessory="chevron" onPress={() => router.push('/prefs')} />
+        <Cell icon="calendar" title={t('profile.freeBlocks')} accessory="chevron" onPress={() => router.push('/blocks')} />
+        <Cell icon="download" title={t('profile.offlineData')} accessory="chevron" onPress={() => router.push('/data')} />
+        <Cell icon="shield" title={t('profile.privacy')} accessory="chevron" onPress={() => router.push('/privacy')} last />
       </Group>
     </Screen>
   );

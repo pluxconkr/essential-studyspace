@@ -4,36 +4,33 @@
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { haversineM, formatDistance } from '@/domain/geo';
 import { newId } from '@/domain/ids';
-import { LEVELS, proofStrength } from '@/domain/levels';
+import { ALL_LEVELS, levelBlurb, levelLabel, proofStrength } from '@/domain/levels';
 import { nowIso, nowMs } from '@/domain/time';
 import type { Amenity, CheckIn, Level, NoiseReport, Session } from '@/domain/types';
+import { t } from '@/i18n';
 import { acquireLocation } from '@/services/location';
 import { postReport } from '@/services/crowdClient';
 import { scheduleSessionNotifications } from '@/services/notifications';
 import { actions, isOfflineNow, useAppState } from '@/store/appStore';
-import { useRealNow, useVenue } from '@/store/derived';
+import { useLiveLevels, useRealNow, useVenue } from '@/store/derived';
 import { Screen, goBackOr } from '@/ui/Screen';
+import { noiseIcon } from '@/ui/icons';
 import { LevelBars } from '@/ui/level-widgets';
 import { Button, Callout, Cell, Field, Group, SectionFooter, SectionHeader, Segmented, Toggle } from '@/ui/primitives';
-import { colors, type } from '@/ui/theme';
+import { colors } from '@/ui/theme';
 
-const NOISE: { value: NoiseReport; label: string }[] = [
-  { value: 0, label: 'Silent' },
-  { value: 1, label: 'Murmur' },
-  { value: 2, label: 'Chatty' },
-  { value: 3, label: 'Loud' },
-];
-const AVAILABLE: { a: Amenity; label: string }[] = [
-  { a: 'outlets', label: 'Outlets free' },
-  { a: 'solo-desks', label: 'Solo desks' },
-  { a: 'big-tables', label: 'Big tables' },
-  { a: 'group-rooms', label: 'Group rooms' },
-  { a: 'wifi-eduroam', label: 'Wifi fine' },
-  { a: 'food-nearby', label: 'Food nearby' },
+const NOISE: NoiseReport[] = [0, 1, 2, 3];
+const AVAILABLE: { a: Amenity; key: 'outlets' | 'solo' | 'big' | 'group' | 'wifi' | 'food' }[] = [
+  { a: 'outlets', key: 'outlets' },
+  { a: 'solo-desks', key: 'solo' },
+  { a: 'big-tables', key: 'big' },
+  { a: 'group-rooms', key: 'group' },
+  { a: 'wifi-eduroam', key: 'wifi' },
+  { a: 'food-nearby', key: 'food' },
 ];
 
 export default function CheckInScreen() {
@@ -45,7 +42,9 @@ export default function CheckInScreen() {
   const share = useAppState((s) => s.settings.shareCheckIns);
   const offline = useAppState((s) => isOfflineNow(s));
   const session = useAppState((s) => s.session);
+  const demo = useAppState((s) => s.settings.demoScenario !== 'live');
   const realNow = useRealNow(5_000);
+  const levels = useLiveLevels();
   const [level, setLevel] = useState<Level | null>(null);
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [noise, setNoise] = useState<NoiseReport | null>(null);
@@ -59,8 +58,8 @@ export default function CheckInScreen() {
 
   if (!venue) {
     return (
-      <Screen title="Check in">
-        <Callout icon="pin" title="Not in the saved directory" />
+      <Screen title={t('checkin.nav')}>
+        <Callout icon="pin" title={t('common.notInDirectory')} />
       </Screen>
     );
   }
@@ -71,10 +70,10 @@ export default function CheckInScreen() {
   const strength = proofStrength(distanceM, fresh?.accuracyM ?? null);
   const presence =
     locStatus === 'denied'
-      ? 'Location is off — this check-in counts as unverified (weight 0.4).'
+      ? t('checkin.locationOff')
       : distanceM === null
-        ? 'Getting a GPS fix… without one the check-in counts as unverified.'
-        : `You are ${formatDistance(distanceM)} from ${venue.shortName}${fresh?.accuracyM ? ` (GPS ±${Math.round(fresh.accuracyM)} m)` : ''} · weight ${strength.toFixed(2)}`;
+        ? t('checkin.gettingFix')
+        : `${t('checkin.distance', { distance: formatDistance(distanceM), spot: venue.shortName })}${strength >= 0.85 ? t('checkin.verified') : t('checkin.unverified')}`;
 
   const build = (): CheckIn => ({
     checkInId: newId('ci'),
@@ -86,15 +85,16 @@ export default function CheckInScreen() {
     note: note.trim() ? note.trim().slice(0, 240) : null,
     at: nowIso(),
     proof: { distanceM: distanceM === null ? null : Math.round(distanceM), gpsAccuracyM: fresh?.accuracyM ?? null },
-    source: 'me',
-    synced: !share,
+    source: demo ? 'demo' : 'me',
+    synced: !share || demo,
+    shownLevel: levels[venue.venueId]?.open ? levels[venue.venueId].level : null,
   });
 
   const post = async (ci: CheckIn) => {
     actions.addCheckIn(ci);
-    if (share && !offline) {
-      const ok = await postReport(ci);
-      if (ok) actions.markCheckInsSynced([ci.checkInId]);
+    if (share && !offline && !demo) {
+      const r = await postReport(ci);
+      if (r !== 'failed') actions.markCheckInsSynced([ci.checkInId]);
     }
   };
 
@@ -118,56 +118,59 @@ export default function CheckInScreen() {
   };
 
   return (
-    <Screen title="Check in" largeTitle="How is it right now?" subtitle={venue.name} fallback="/" testID="checkin">
+    <Screen title={t('checkin.nav')} largeTitle={t('checkin.title')} subtitle={venue.name} fallback="/" testID="checkin">
       {venue.zones.length > 1 ? (
         <>
-          <SectionHeader>Where in the building</SectionHeader>
+          <SectionHeader>{t('checkin.whereInBuilding')}</SectionHeader>
           <Group>
-            <Cell icon="pin" title="Whole building" accessory={zoneId === null ? 'check' : 'none'} onPress={() => setZoneId(null)} accessibilityRole="button" accessibilityState={{ selected: zoneId === null }} />
+            <Cell icon="pin" title={t('checkin.wholeBuilding')} accessory={zoneId === null ? 'check' : 'none'} onPress={() => setZoneId(null)} accessibilityRole="button" accessibilityState={{ selected: zoneId === null }} />
             {venue.zones.map((z, i) => (
-              <Cell key={z.zoneId} icon={z.noise === 'silent' ? 'quiet' : 'noise'} title={z.name} subtitle={z.floor} accessory={zoneId === z.zoneId ? 'check' : 'none'} onPress={() => setZoneId(z.zoneId)} accessibilityRole="button" accessibilityState={{ selected: zoneId === z.zoneId }} last={i === venue.zones.length - 1} />
+              <Cell key={z.zoneId} icon={noiseIcon(z.noise)} title={z.name} subtitle={z.floor} accessory={zoneId === z.zoneId ? 'check' : 'none'} onPress={() => setZoneId(z.zoneId)} accessibilityRole="button" accessibilityState={{ selected: zoneId === z.zoneId }} last={i === venue.zones.length - 1} />
             ))}
           </Group>
         </>
       ) : null}
 
-      <SectionHeader>How crowded is it?</SectionHeader>
+      <SectionHeader>{t('checkin.howCrowded')}</SectionHeader>
       <Group>
-        {LEVELS.map((l, i) => (
-          <Cell key={l.level} leading={<LevelBars level={l.level} size="md" />} title={l.label} subtitle={l.blurb} accessory={level === l.level ? 'check' : 'none'} onPress={() => setLevel(l.level)} accessibilityRole="button" accessibilityState={{ selected: level === l.level }} last={i === LEVELS.length - 1} testID={`level-${l.level}`} />
+        {ALL_LEVELS.map((l, i) => (
+          <Cell key={l} leading={<LevelBars level={l} size="md" />} title={levelLabel(l)} subtitle={levelBlurb(l)} accessory={level === l ? 'check' : 'none'} onPress={() => setLevel(l)} accessibilityRole="button" accessibilityState={{ selected: level === l }} last={i === ALL_LEVELS.length - 1} testID={`level-${l}`} />
         ))}
       </Group>
-      <SectionFooter>One tap is a complete check-in. The rest is optional.</SectionFooter>
+      <SectionFooter>{t('checkin.onlyLevel')}</SectionFooter>
 
-      <SectionHeader>Noise (optional)</SectionHeader>
+      <SectionHeader>{t('checkin.noise')}</SectionHeader>
       <Group padded>
-        <Segmented<NoiseReport | -1> label="Noise level" options={[{ value: -1, label: 'Skip' }, ...NOISE]} value={noise ?? -1} onChange={(v) => setNoise(v === -1 ? null : v)} />
+        <Segmented<NoiseReport | -1> label={t('checkin.noiseLabel')} options={[{ value: -1, label: t('checkin.skip') }, ...NOISE.map((n) => ({ value: n, label: t(`checkin.noise.${n}` as const) }))]} value={noise ?? -1} onChange={(v) => setNoise(v === -1 ? null : v)} />
       </Group>
 
-      <SectionHeader>What&apos;s actually available? (optional)</SectionHeader>
+      <SectionHeader>{t('checkin.available')}</SectionHeader>
       <Group>
         {AVAILABLE.map((x, i) => (
-          <Toggle key={x.a} label={x.label} value={avail.includes(x.a)} onChange={(v) => setAvail((cur) => (v ? [...cur, x.a] : cur.filter((a) => a !== x.a)))} last={i === AVAILABLE.length - 1} />
+          <Toggle key={x.a} label={t(`checkin.avail.${x.key}` as const)} value={avail.includes(x.a)} onChange={(v) => setAvail((cur) => (v ? [...cur, x.a] : cur.filter((a) => a !== x.a)))} last={i === AVAILABLE.length - 1} />
         ))}
       </Group>
 
-      <SectionHeader>Note for yourself (optional)</SectionHeader>
+      <SectionHeader>{t('checkin.note')}</SectionHeader>
       <Group>
-        <Field value={note} onChangeText={setNote} placeholder="e.g. 2A is dead quiet, avoid the atrium side" maxLength={240} last />
+        <Field value={note} onChangeText={setNote} placeholder={t('checkin.notePlaceholder')} maxLength={240} last />
       </Group>
-      <SectionFooter>Notes stay on this phone. Only the level, zone and a minute-rounded time are shared, and only if sharing is on.</SectionFooter>
+      <SectionFooter>{t('checkin.noteFooter')}</SectionFooter>
 
-      <SectionHeader>Presence</SectionHeader>
+      <SectionHeader>{t('checkin.presence')}</SectionHeader>
       <Group>
-        <Cell icon={distanceM === null ? 'locationOff' : 'location'} iconColor={distanceM !== null && strength >= 0.85 ? colors.green : colors.ink2} title={presence} subtitle="Precise GPS confirms you are here, then is discarded. Other students never see a location, only the venue." />
-        <Toggle icon="share" label="Share anonymously" value={share} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={offline ? 'No signal — will upload when back online' : 'Venue-level only · no account, no name'} last />
+        <Cell icon={distanceM === null ? 'locationOff' : 'location'} iconColor={distanceM !== null && strength >= 0.85 ? colors.green : colors.ink2} title={presence} subtitle={t('checkin.presenceHint')} />
+        <Toggle icon="share" label={t('checkin.share')} value={share} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={offline ? t('checkin.shareOffline') : t('checkin.shareHint')} last />
+      </Group>
+
+      <Group>
+        <Cell icon="map" title={t('checkin.notHere')} accessory="chevron" onPress={() => router.replace('/map')} last />
       </Group>
 
       <View style={styles.actions}>
-        <Button title="Post check-in" icon="checkin" disabled={level === null} onPress={() => void submit()} testID="checkin-post" />
-        <Button title={session ? 'Post & back to session' : 'Post & start a 50/10 session here'} icon="focus" variant="tonal" disabled={level === null} onPress={() => void submitAndStart()} />
+        <Button title={t('checkin.post')} icon="checkin" disabled={level === null} onPress={() => void submit()} testID="checkin-post" />
+        <Button title={session ? t('checkin.postReturn') : t('checkin.postStart')} icon="focus" variant="tonal" disabled={level === null} onPress={() => void submitAndStart()} />
       </View>
-      <Text style={[type.footnote, { textAlign: 'center', marginTop: 10 }]}>Corrections are what keep the forecast honest. Report what you see, not what you hope.</Text>
     </Screen>
   );
 }

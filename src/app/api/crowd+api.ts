@@ -17,8 +17,10 @@ import { isLevel } from '@/domain/levels';
 export const RETENTION_MS = 3 * 3600_000;
 export const MAX_PER_VENUE = 200;
 export const MAX_VENUES_PER_GET = 60;
-/** Per-IP POST budget per 10 minutes. A phone checks in a few times an hour at most. */
-export const RATE_LIMIT = { posts: 20, windowMs: 10 * 60_000 } as const;
+/** Per-IP POST budget per 10 minutes. A whole library behind campus NAT shares one address, so this is generous; it still stops a script. */
+export const RATE_LIMIT = { posts: 300, windowMs: 10 * 60_000 } as const;
+
+const AMENITIES = ['outlets', 'wifi-eduroam', 'wifi-public', 'group-rooms', 'computers', 'printing', 'cafe', 'food-nearby', 'late-night', 'solo-desks', 'big-tables'] as const;
 
 const ReportSchema = z.object({
   venueId: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/),
@@ -26,6 +28,8 @@ const ReportSchema = z.object({
   level: z.number().int().min(0).max(4),
   at: z.string().datetime({ offset: true }),
   weight: z.number().min(0).max(1).optional(),
+  noise: z.number().int().min(0).max(3).nullable().optional(),
+  amenities: z.array(z.enum(AMENITIES)).max(AMENITIES.length).optional(),
 });
 
 export interface StoredReport {
@@ -34,6 +38,8 @@ export interface StoredReport {
   /** ISO, rounded to the minute. */
   at: string;
   weight: number;
+  noise: number | null;
+  amenities: string[];
 }
 
 export interface CrowdStore {
@@ -173,7 +179,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   const t = Date.parse(body.at);
   if (now - t > RETENTION_MS || t > now + 5 * 60_000) return Response.json({ error: 'stale' }, { status: 422 });
-  const r: StoredReport = { zoneId: body.zoneId ?? null, level: body.level, at: roundToMinute(body.at), weight: Math.min(1, Math.max(0.4, body.weight ?? 0.4)) };
+  const r: StoredReport = { zoneId: body.zoneId ?? null, level: body.level, at: roundToMinute(body.at), weight: Math.min(1, Math.max(0.4, body.weight ?? 0.4)), noise: body.noise ?? null, amenities: body.amenities ?? [] };
   try {
     await getStore().push(body.venueId, r);
   } catch {

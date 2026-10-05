@@ -1,19 +1,28 @@
+import { getLocales } from 'expo-localization';
 import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
-import { AppState, Platform } from 'react-native';
+import { AppState, Platform, useWindowDimensions } from 'react-native';
 
+// Importing this module also defines the background poll task at module scope (required by expo-task-manager).
+import { ensureBackgroundPollRegistered } from '@/services/backgroundPoll';
 import { restoreDemoScenario } from '@/services/demo';
 import { startNetworkWatch } from '@/services/network';
 import { configureNotifications } from '@/services/notifications';
 import { refreshIfStale } from '@/services/refresh';
+import { setLocale } from '@/i18n';
 import { hydrate, useAppState } from '@/store/appStore';
 import { colors } from '@/ui/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Synchronous hydration from local storage before the first render. No network, no waiting.
+// Device language first (iOS per-app language setting respected), then synchronous hydration. No network, no waiting.
+try {
+  setLocale(getLocales()[0]?.languageTag);
+} catch {
+  /* stays English */
+}
 hydrate();
 
 export const unstable_settings = {
@@ -27,6 +36,8 @@ const theme = {
 
 export default function RootLayout() {
   const onboarded = useAppState((s) => s.onboarded);
+  // Text that is already mounted keeps its old measurements when the user changes text size; remounting fixes it.
+  const { fontScale } = useWindowDimensions();
   const booted = useRef(false);
 
   useEffect(() => {
@@ -39,19 +50,25 @@ export default function RootLayout() {
       if (info.online) void refreshIfStale();
     });
     void configureNotifications();
+    void ensureBackgroundPollRegistered();
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') void refreshIfStale();
     });
+    // Levels go stale in minutes: while the app stays open, re-check every five.
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') void refreshIfStale();
+    }, 5 * 60_000);
     return () => {
       stopNet();
       sub.remove();
+      clearInterval(timer);
     };
   }, []);
 
   return (
     <ThemeProvider value={theme}>
       <StatusBar style={Platform.OS === 'ios' ? 'dark' : 'auto'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+      <Stack key={`fs-${fontScale}`} screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
         <Stack.Protected guard={!onboarded}>
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
@@ -63,6 +80,7 @@ export default function RootLayout() {
           <Stack.Screen name="prefs" />
           <Stack.Screen name="blocks" />
           <Stack.Screen name="data" />
+          <Stack.Screen name="privacy" />
           <Stack.Screen name="why/[id]" options={{ presentation: 'modal' }} />
         </Stack.Protected>
       </Stack>

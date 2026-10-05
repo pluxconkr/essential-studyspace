@@ -15,10 +15,10 @@ beforeEach(() => {
 describe('POST /api/crowd', () => {
   test('stores a valid report with a minute-rounded time and clamped weight', async () => {
     const at = new Date().toISOString();
-    const res = await post({ venueId: 'alexander-library', zoneId: 'alex-2ab', level: 3, at, weight: 0.1 });
+    const res = await post({ venueId: 'alexander-library', zoneId: 'alex-2ab', level: 3, at, weight: 0.1, noise: 1, amenities: ['outlets', 'solo-desks'] });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.kept).toEqual({ zoneId: 'alex-2ab', level: 3, at: roundToMinute(at), weight: 0.4 });
+    expect(body.kept).toEqual({ zoneId: 'alex-2ab', level: 3, at: roundToMinute(at), weight: 0.4, noise: 1, amenities: ['outlets', 'solo-desks'] });
     const g = await (await get('alexander-library,carr-library')).json();
     expect(g.configured).toBe(false);
     expect(g.storage).toBe('memory');
@@ -32,6 +32,8 @@ describe('POST /api/crowd', () => {
     expect((await post({ venueId: 'alexander-library', level: 5, at })).status).toBe(400);
     expect((await post({ venueId: 'Alexander Library!', level: 1, at })).status).toBe(400);
     expect((await post({ venueId: 'alexander-library', level: 1, at: 'yesterday' })).status).toBe(400);
+    expect((await post({ venueId: 'alexander-library', level: 1, at, noise: 7 })).status).toBe(400);
+    expect((await post({ venueId: 'alexander-library', level: 1, at, amenities: ['jacuzzi'] })).status).toBe(400);
     expect((await post({ venueId: 'alexander-library', level: 1, at: new Date(Date.now() - 4 * 3600_000).toISOString() })).status).toBe(422);
     expect((await post({ venueId: 'alexander-library', level: 1, at: new Date(Date.now() + 3600_000).toISOString() })).status).toBe(422);
   });
@@ -47,15 +49,15 @@ describe('POST /api/crowd', () => {
     const s = createMemoryStore();
     setStore(s);
     const at = new Date().toISOString();
-    for (let i = 0; i < MAX_PER_VENUE + 5; i++) await s.push('x', { zoneId: null, level: 1, at, weight: 1 });
+    for (let i = 0; i < MAX_PER_VENUE + 5; i++) await s.push('x', { zoneId: null, level: 1, at, weight: 1, noise: null, amenities: [] });
     expect(await s.list('x')).toHaveLength(MAX_PER_VENUE);
   });
 
   test('fresh() drops reports older than the retention window', () => {
     const now = Date.now();
     const list = [
-      { zoneId: null, level: 1, at: new Date(now - 60_000).toISOString(), weight: 1 },
-      { zoneId: null, level: 1, at: new Date(now - 4 * 3600_000).toISOString(), weight: 1 },
+      { zoneId: null, level: 1, at: new Date(now - 60_000).toISOString(), weight: 1, noise: null, amenities: [] },
+      { zoneId: null, level: 1, at: new Date(now - 4 * 3600_000).toISOString(), weight: 1, noise: null, amenities: [] },
     ];
     expect(fresh(list, now)).toHaveLength(1);
   });

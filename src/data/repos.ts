@@ -15,7 +15,6 @@ import type {
   CrowdSnapshot,
   DroppedItem,
   FocusEntry,
-  LocationFix,
   Prefs,
   Session,
   Settings,
@@ -38,7 +37,6 @@ export const KEYS = {
   focusLog: 'focusLog:v1',
   watches: 'watches:v1',
   cacheMeta: 'cacheMeta:v1',
-  lastFix: 'location:lastFix:v1',
   watchNotified: 'watchNotified:v1',
   storageNotice: 'storageNotice:v1',
 } as const;
@@ -338,17 +336,6 @@ export const cacheMetaRepo = {
       delete next[key];
       return next;
     });
-  },
-};
-
-// ---------- Last GPS fix ----------
-
-export const locationRepo = {
-  get(): LocationFix | null {
-    return kv.get<LocationFix>(KEYS.lastFix);
-  },
-  set(fix: LocationFix): void {
-    kv.set(KEYS.lastFix, fix);
   },
 };
 

@@ -86,4 +86,21 @@ export const type = {
   footnote: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const, letterSpacing: -0.08, color: colors.ink2 },
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '400' as const, color: colors.ink2 },
   sectionHeader: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const, letterSpacing: -0.08, textTransform: 'uppercase' as const, color: colors.ink2 },
+  /** The level word on a spot ("Packed"). */
+  display: { fontSize: 34, lineHeight: 40, fontWeight: '700' as const, letterSpacing: -0.4, color: colors.ink },
+  /** Timer ring numerals. */
+  numerals: { fontFamily: fonts.rounded, fontSize: 52, lineHeight: 60, fontWeight: '600' as const, letterSpacing: -0.5, color: colors.ink },
+  caption2: { fontSize: 11, lineHeight: 13, fontWeight: '600' as const, color: colors.ink2 },
+  /** Segmented-control labels; `controlSmall` when four or more options share the row. */
+  control: { fontSize: 15, lineHeight: 20, fontWeight: '500' as const, color: colors.ink },
+  controlSmall: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const, color: colors.ink },
+  /** Tab bar labels do not scale, like UIKit. */
+  tabLabel: { fontSize: 10.5, fontWeight: '500' as const },
+  /** SVG map text (no Dynamic Type). */
+  mapLabel: { fontSize: 9.5, lineHeight: 12, fontWeight: '600' as const, color: colors.ink2 },
+  mapAttribution: { fontSize: 9.5, lineHeight: 12, fontWeight: '400' as const, color: colors.ink2 },
+  mapTag: { fontSize: 13, lineHeight: 18, fontWeight: '600' as const, letterSpacing: -0.08, color: colors.ink2 },
+  mapPin: { fontSize: 10, fontWeight: '800' as const },
+  legend: { fontSize: 12.5, lineHeight: 16, fontWeight: '600' as const, color: colors.ink2 },
+  chartAxis: { fontSize: 10, fontWeight: '400' as const, color: colors.ink2 },
 } as const;

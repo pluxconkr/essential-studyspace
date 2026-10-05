@@ -8,7 +8,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { blockValid, formatBlock, sortBlocks } from '@/domain/blocks';
 import { newId } from '@/domain/ids';
-import { DAY_LONG, DAY_NAME, formatMinutes } from '@/domain/time';
+import { dayLong, dayName, formatMinutes } from '@/domain/time';
+import { t } from '@/i18n';
 import { actions, useAppState } from '@/store/appStore';
 import { Icon } from '@/ui/icons';
 import { Button, Cell, Group, SectionFooter, SectionHeader, Segmented } from '@/ui/primitives';
@@ -25,13 +26,13 @@ function TimeRow({ label, value, onChange, last }: { label: string; value: numbe
       last={last}
       trailing={
         <View style={styles.stepper} accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: formatMinutes(value) }}>
-          <Pressable onPress={() => onChange(Math.max(0, value - STEP))} accessibilityLabel={`Earlier ${label}`} accessibilityRole="button" style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}>
+          <Pressable onPress={() => onChange(Math.max(0, value - STEP))} accessibilityLabel={t('blocks.earlier', { label })} accessibilityRole="button" style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}>
             <Icon name="minus" size={16} color={colors.ink} weight="semibold" />
           </Pressable>
           <Text maxFontSizeMultiplier={1.3} style={[type.headline, tabular, styles.stepValue]}>
             {formatMinutes(value)}
           </Text>
-          <Pressable onPress={() => onChange(Math.min(1440, value + STEP))} accessibilityLabel={`Later ${label}`} accessibilityRole="button" style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}>
+          <Pressable onPress={() => onChange(Math.min(1440, value + STEP))} accessibilityLabel={t('blocks.later', { label })} accessibilityRole="button" style={({ pressed }) => [styles.stepBtn, pressed && { opacity: 0.6 }]}>
             <Icon name="plus" size={16} color={colors.ink} weight="semibold" />
           </Pressable>
         </View>
@@ -56,15 +57,15 @@ export default function BlocksScreen() {
   const remove = (id: string) => actions.savePrefs({ ...prefs, blocks: prefs.blocks.filter((b) => b.blockId !== id) });
 
   return (
-    <Screen title="Free blocks" largeTitle="Free blocks" subtitle="Your gaps between classes and shifts. The Now tab ranks spots that stay open until the gap ends." fallback="/">
-      <SectionHeader>Your week</SectionHeader>
+    <Screen title={t('blocks.nav')} largeTitle={t('blocks.nav')} subtitle={t('blocks.subtitle')} fallback="/">
+      <SectionHeader>{t('blocks.yourWeek')}</SectionHeader>
       <Group>
         {blocks.length === 0 ? (
-          <Cell icon="gap" iconColor={colors.ink2} title="No free blocks yet" subtitle="Add one below. A 3-hour gap near a station is the whole commuter problem." last />
+          <Cell icon="gap" iconColor={colors.ink2} title={t('blocks.none')} subtitle={t('blocks.addBelow')} last />
         ) : (
           blocks.map((b, i) => (
-            <Cell key={b.blockId} icon="gap" title={`${DAY_LONG[b.weekday]} · ${formatBlock(b)}`} subtitle={`${Math.round((b.endMin - b.startMin) / 60 * 10) / 10} h free`} trailing={
-              <Pressable onPress={() => remove(b.blockId)} accessibilityRole="button" accessibilityLabel={`Remove ${DAY_LONG[b.weekday]} ${formatBlock(b)}`} hitSlop={8} style={({ pressed }) => [{ minHeight: MIN_TAP, justifyContent: 'center' }, pressed && { opacity: 0.5 }]}>
+            <Cell key={b.blockId} icon="gap" title={t('blocks.row', { day: dayLong(b.weekday), range: formatBlock(b) })} subtitle={t('blocks.hoursFree', { n: Math.round((b.endMin - b.startMin) / 60 * 10) / 10 })} trailing={
+              <Pressable onPress={() => remove(b.blockId)} accessibilityRole="button" accessibilityLabel={t('blocks.remove', { day: dayLong(b.weekday), range: formatBlock(b) })} hitSlop={8} style={({ pressed }) => [{ minHeight: MIN_TAP, justifyContent: 'center' }, pressed && { opacity: 0.5 }]}>
                 <Icon name="trash" size={18} color={colors.red} />
               </Pressable>
             } last={i === blocks.length - 1} />
@@ -72,17 +73,17 @@ export default function BlocksScreen() {
         )}
       </Group>
 
-      <SectionHeader>Add a block</SectionHeader>
+      <SectionHeader>{t('blocks.add')}</SectionHeader>
       <Group padded>
-        <Segmented<number> label="Weekday" options={[1, 2, 3, 4, 5, 6, 0].map((d) => ({ value: d, label: DAY_NAME[d] }))} value={weekday} onChange={setWeekday} />
+        <Segmented<number> label={t('blocks.weekday')} options={[1, 2, 3, 4, 5, 6, 0].map((d) => ({ value: d, label: dayName(d) }))} value={weekday} onChange={setWeekday} />
       </Group>
       <Group>
-        <TimeRow label="From" value={startMin} onChange={(v) => { setStartMin(v); if (endMin < v + STEP) setEndMin(Math.min(1440, v + STEP)); }} />
-        <TimeRow label="Until" value={endMin} onChange={(v) => { setEndMin(v); if (startMin > v - STEP) setStartMin(Math.max(0, v - STEP)); }} last />
+        <TimeRow label={t('blocks.from')} value={startMin} onChange={(v) => { setStartMin(v); if (endMin < v + STEP) setEndMin(Math.min(1440, v + STEP)); }} />
+        <TimeRow label={t('blocks.until')} value={endMin} onChange={(v) => { setEndMin(v); if (startMin > v - STEP) setStartMin(Math.max(0, v - STEP)); }} last />
       </Group>
-      <Button title={`Add ${DAY_NAME[weekday]} ${formatMinutes(startMin)} – ${formatMinutes(endMin)}`} onPress={add} disabled={!valid} style={{ marginTop: 4 }} testID="block-add" />
-      <SectionFooter>Blocks must be at least 30 minutes. Stored on this phone; a calendar sync (busy/free only) is a later phase.</SectionFooter>
-      <Button title="Done" variant="ghost" onPress={() => router.back()} style={{ marginTop: 6 }} />
+      <Button title={t('blocks.addButton', { day: dayName(weekday), from: formatMinutes(startMin), to: formatMinutes(endMin) })} onPress={add} disabled={!valid} style={{ marginTop: 4 }} testID="block-add" />
+      <SectionFooter>{t('blocks.minFooter')}</SectionFooter>
+      <Button title={t('common.done')} variant="ghost" onPress={() => router.back()} style={{ marginTop: 6 }} />
     </Screen>
   );
 }

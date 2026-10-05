@@ -4,6 +4,8 @@
  * library hours in library time. A demo clock offset can shift "now" for the late-night scenario.
  */
 
+import { t, tlist, tn } from '@/i18n';
+
 export const TZ = 'America/New_York';
 
 let clockOffsetMs = 0;
@@ -123,7 +125,17 @@ export function formatMinutes(min: number): string {
   const h24 = Math.floor(m / 60);
   const mm = m % 60;
   const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${h12}:${pad2(mm)} ${h24 < 12 ? 'AM' : 'PM'}`;
+  return `${h12}:${pad2(mm)} ${h24 < 12 ? t('time.am') : t('time.pm')}`;
+}
+
+/** "8 AM" / "2:30 PM" — drops ":00" like iOS does in hour tables. */
+export function formatMinutesShort(min: number): string {
+  const m = ((Math.round(min) % 1440) + 1440) % 1440;
+  const h24 = Math.floor(m / 60);
+  const mm = m % 60;
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  const ap = h24 < 12 ? t('time.am') : t('time.pm');
+  return mm === 0 ? `${h12} ${ap}` : `${h12}:${pad2(mm)} ${ap}`;
 }
 
 /** "2:30 PM" in NJ time. */
@@ -133,17 +145,17 @@ export function formatClock(input: string | number | null | undefined): string {
   return formatMinutes(zonedParts(ms).minutesOfDay);
 }
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-export const DAY_NAME = DAYS;
-export const DAY_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+/** Short weekday name (0 = Sunday) in the current language. */
+export const dayName = (i: number) => tlist('time.days')[((i % 7) + 7) % 7];
+export const dayLong = (i: number) => tlist('time.daysLong')[((i % 7) + 7) % 7];
+const monthName = (i: number) => tlist('time.months')[i];
 
 /** "Mon 2:30 PM" */
 export function formatShort(input: string | number | null | undefined): string {
   const ms = toEpoch(input);
   if (!Number.isFinite(ms)) return '—';
   const p = zonedParts(ms);
-  return `${DAYS[p.weekday]} ${formatMinutes(p.minutesOfDay)}`;
+  return `${dayName(p.weekday)} ${formatMinutes(p.minutesOfDay)}`;
 }
 
 /** "2026-10-03 14:02 ET" — compact stamp for provenance rows. */
@@ -159,39 +171,38 @@ export function formatDate(input: string | number | null | undefined): string {
   const ms = toEpoch(input);
   if (!Number.isFinite(ms)) return '—';
   const p = zonedParts(ms);
-  return `${DAYS[p.weekday]} ${p.day} ${MONTHS[p.month - 1]}`;
+  return `${dayName(p.weekday)} ${p.day} ${monthName(p.month - 1)}`;
 }
 
 /** Relative age: "just now", "5 min ago", "3 hours ago", "2 days ago". */
 export function relativeAgo(input: string | number | null | undefined, now: number = nowMs()): string {
   const ms = toEpoch(input);
-  if (!Number.isFinite(ms)) return 'never';
+  if (!Number.isFinite(ms)) return t('time.never');
   const diff = Math.max(0, now - ms);
   const min = Math.floor(diff / 60_000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
+  if (min < 1) return t('time.justNow');
+  if (min < 60) return t('time.minAgo', { n: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `${h} hour${h === 1 ? '' : 's'} ago`;
-  const d = Math.floor(h / 24);
-  return `${d} day${d === 1 ? '' : 's'} ago`;
+  if (h < 24) return tn(h, 'time.hoursAgo');
+  return tn(Math.floor(h / 24), 'time.daysAgo');
 }
 
 /** "in 25 min" / "in 2 h 10 min". Never negative. */
 export function formatIn(msAhead: number): string {
   const min = Math.max(0, Math.round(msAhead / 60_000));
-  if (min < 60) return `in ${min} min`;
+  if (min < 60) return t('time.inMin', { n: min });
   const h = Math.floor(min / 60);
   const m = min % 60;
-  return m === 0 ? `in ${h} h` : `in ${h} h ${m} min`;
+  return m === 0 ? t('time.inH', { h }) : t('time.inHM', { h, m });
 }
 
 /** "14h 20m" / "45m" */
 export function formatDuration(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
-  if (h === 0) return `${m}m`;
-  return `${h}h ${pad2(m)}m`;
+  const totalMin = Math.max(0, Math.round(seconds / 60));
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return t('focus.durationM', { m });
+  return t('focus.durationH', { h, m: pad2(m) });
 }
 
 /** "24:59" for timers. */

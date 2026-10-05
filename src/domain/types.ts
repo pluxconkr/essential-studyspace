@@ -51,6 +51,8 @@ export interface Zone {
   noise: NoisePolicy;
   /** Published seat count, or null when the venue does not publish one (most do not). */
   seats: number | null;
+  /** Wheelchair-accessible seats, tracked separately and never counted as general capacity. */
+  accessibleSeats?: number | null;
   outlets: 'many' | 'some' | 'few' | null;
   groupRooms?: number;
   computers?: number;
@@ -151,6 +153,8 @@ export interface CheckIn {
   source: 'me' | 'demo';
   /** True once the anonymous copy reached the relay (or sharing was off). */
   synced: boolean;
+  /** The level the app was showing for this spot when the check-in was posted — the wasted-trip metric. */
+  shownLevel?: Level | null;
 }
 
 /** Anonymous report as returned by the crowd relay. No ids, no notes, minute-rounded time. */
@@ -161,6 +165,8 @@ export interface CrowdReport {
   at: string;
   /** Proof strength 0.4..1.0 as judged by the reporting phone. */
   weight: number;
+  noise?: NoiseReport | null;
+  amenities?: Amenity[];
 }
 
 export interface CrowdSnapshot {
@@ -181,6 +187,8 @@ export interface LiveLevel {
   confidence: Confidence;
   /** Number of live reports that contributed (own + relay). */
   reports: number;
+  /** Reports within the "fresh" window — the ones a high-confidence verdict rests on. */
+  fresh: number;
   newestAt: string | null;
   /** What filled the gaps: the per-kind estimate, a venue-declared curve, or nothing (closed). */
   prior: 'estimate' | 'venue' | null;
@@ -196,7 +204,6 @@ export interface TimerShape {
   focusMin: number;
   breakMin: number;
   blocks: number;
-  blurb: string;
 }
 
 export interface Goal {

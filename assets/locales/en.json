@@ -1,0 +1,4 @@
+{
+  "CFBundleDisplayName": "StudySpace",
+  "NSLocationWhenInUseUsageDescription": "StudySpace uses your location only to sort study spots by walking time and to confirm you are at a spot when you check in. Precise location is discarded after the check and is never shown to other students."
+}

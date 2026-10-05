@@ -7,24 +7,25 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatMMSS } from '@/domain/time';
 import { scheduleOf, shapeById, type BlockState } from '@/domain/timer';
 import type { Goal, Session } from '@/domain/types';
+import { t } from '@/i18n';
 
 import { Icon } from './icons';
 import { Checkbox, ProgressRing } from './primitives';
-import { MIN_TAP, colors, fonts, tabular, type } from './theme';
+import { MIN_TAP, colors, tabular, type } from './theme';
 
 export function TimerRing({ block, size = 220 }: { block: BlockState; size?: number }) {
   const pct = block.totalMs && block.remainingMs !== null ? ((block.totalMs - block.remainingMs) / block.totalMs) * 100 : 0;
   const color = block.kind === 'break' ? colors.green : colors.tint;
-  const label = block.kind === 'done' ? 'Done' : block.remainingMs === null ? 'Free' : formatMMSS(block.remainingMs);
-  const sub = block.kind === 'done' ? 'all blocks finished' : block.kind === 'break' ? `break · block ${block.blockNo} of ${block.blocks}` : block.remainingMs === null ? 'open-ended' : `focus · block ${block.blockNo} of ${block.blocks}`;
+  const label = block.kind === 'done' ? t('timer.done') : block.remainingMs === null ? t('timer.freeLabel') : formatMMSS(block.remainingMs);
+  const sub = block.kind === 'done' ? t('timer.allDone') : block.kind === 'break' ? t('timer.breakBlock', { n: block.blockNo, total: block.blocks }) : block.remainingMs === null ? t('timer.openEnded') : t('timer.focusBlock', { n: block.blockNo, total: block.blocks });
   return (
     <View style={{ alignItems: 'center' }} accessibilityLiveRegion="polite">
       <ProgressRing pct={block.remainingMs === null ? 100 : pct} size={size} stroke={10} color={block.paused ? colors.ink4 : color} track={colors.fill}>
         <View style={{ alignItems: 'center' }}>
-          <Text maxFontSizeMultiplier={1.1} adjustsFontSizeToFit numberOfLines={1} style={[styles.numerals, tabular, block.paused && { color: colors.ink2 }]} accessibilityLabel={`${label} ${block.paused ? 'paused' : 'remaining'}`}>
+          <Text maxFontSizeMultiplier={1.1} adjustsFontSizeToFit numberOfLines={1} style={[styles.numerals, tabular, block.paused && { color: colors.ink2 }]} accessibilityLabel={`${label} ${block.paused ? t('timer.paused') : t('timer.remaining')}`}>
             {label}
           </Text>
-          <Text style={type.footnote}>{block.paused ? 'paused' : sub}</Text>
+          <Text style={type.footnote}>{block.paused ? t('timer.paused') : sub}</Text>
         </View>
       </ProgressRing>
     </View>
@@ -38,7 +39,7 @@ export function BlockStrip({ session, block }: { session: Session; block: BlockS
   const plan = scheduleOf(shape);
   const currentIdx = plan.findIndex((b) => b.kind === block.kind && b.index + 1 === block.blockNo);
   return (
-    <View style={styles.strip} accessibilityLabel={`Block ${block.blockNo} of ${block.blocks}`} accessibilityRole="progressbar" accessibilityValue={{ now: block.blockNo, min: 1, max: block.blocks }}>
+    <View style={styles.strip} accessibilityLabel={t('timer.blockOf', { n: block.blockNo, total: block.blocks })} accessibilityRole="progressbar" accessibilityValue={{ now: block.blockNo, min: 1, max: block.blocks }}>
       {plan.map((b, i) => {
         const done = block.kind === 'done' || i < currentIdx;
         const cur = i === currentIdx && block.kind !== 'done';
@@ -55,7 +56,7 @@ export function GoalRow({ goal, onToggle, onRemove, last }: { goal: Goal; onTogg
       <View style={[styles.goalBody, !last && styles.goalSeparator]}>
         <Text style={[type.body, { flex: 1 }, goal.done && styles.goalDone]}>{goal.text}</Text>
         {onRemove ? (
-          <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Remove goal ${goal.text}`} hitSlop={8} style={({ pressed }) => [{ minHeight: MIN_TAP, justifyContent: 'center', paddingLeft: 8 }, pressed && { opacity: 0.5 }]}>
+          <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={t('timer.removeGoal', { goal: goal.text })} hitSlop={8} style={({ pressed }) => [{ minHeight: MIN_TAP, justifyContent: 'center', paddingLeft: 8 }, pressed && { opacity: 0.5 }]}>
             <Icon name="close" size={16} color={colors.ink4} />
           </Pressable>
         ) : null}
@@ -65,7 +66,7 @@ export function GoalRow({ goal, onToggle, onRemove, last }: { goal: Goal; onTogg
 }
 
 const styles = StyleSheet.create({
-  numerals: { fontFamily: fonts.rounded, fontSize: 52, lineHeight: 60, fontWeight: '600', color: colors.ink, letterSpacing: -0.5 },
+  numerals: { ...type.numerals },
   strip: { flexDirection: 'row', gap: 4, marginTop: 14, height: 8 },
   seg: { height: 8, borderRadius: 4, backgroundColor: colors.fill },
   goal: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16, gap: 12 },

@@ -19,6 +19,7 @@ import CheckInScreen from '@/app/checkin/[id]';
 import DataScreen from '@/app/data';
 import OnboardingScreen from '@/app/onboarding';
 import PrefsScreen from '@/app/prefs';
+import PrivacyScreen from '@/app/privacy';
 import ProfileScreen from '@/app/profile';
 import SpotScreen from '@/app/spot/[id]';
 import WhyScreen from '@/app/why/[id]';
@@ -35,6 +36,7 @@ const routes = {
   prefs: PrefsScreen,
   blocks: BlocksScreen,
   data: DataScreen,
+  privacy: PrivacyScreen,
   'why/[id]': WhyScreen,
   onboarding: OnboardingScreen,
 };
@@ -55,7 +57,7 @@ describe('Now tab (offline, no fetch)', () => {
   test('live: ranked spots, closed list, your week, offline banner, zero fetches', async () => {
     await renderRouter(routes, { initialUrl: '/' });
     expect(await screen.findByText('Open near you')).toBeTruthy();
-    expect(screen.getByText(/OFFLINE MODE/)).toBeTruthy();
+    expect(screen.getByText(/OFFLINE MODE · saved hours and your check-ins/)).toBeTruthy();
     expect(screen.getByText(/No signal · saved hours and typical pattern/)).toBeTruthy();
     expect(screen.getAllByText(/min$/).length).toBeGreaterThan(0);
     expect(screen.getByText(/-day streak/)).toBeTruthy();
@@ -65,7 +67,7 @@ describe('Now tab (offline, no fetch)', () => {
   test('finals demo: labelled, Packed/Full libraries, Alexander 24h exception', async () => {
     applyDemoScenario('finals');
     await renderRouter(routes, { initialUrl: '/' });
-    expect(await screen.findByText(/Demo scenario/)).toBeTruthy();
+    expect(await screen.findByText(/^Demo · clock set to/)).toBeTruthy();
     expect(screen.getAllByText(/Packed|Full/).length).toBeGreaterThan(0);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -74,6 +76,14 @@ describe('Now tab (offline, no fetch)', () => {
     applyDemoScenario('late');
     await renderRouter(routes, { initialUrl: '/' });
     expect((await screen.findAllByText(/closes in|past midnight/i)).length).toBeGreaterThan(0);
+  });
+
+  test('standing at a spot offers a one-tap check-in once per 30 minutes', async () => {
+    setState({ location: { lat: 40.50495, lng: -74.45228, accuracyM: 10, at: Date.now() }, locationStatus: 'granted' });
+    await renderRouter(routes, { initialUrl: '/' });
+    expect(await screen.findByText("You're at Alexander Library")).toBeTruthy();
+    await press(screen.getByTestId('arrival-checkin'));
+    expect(await screen.findByText('How crowded is it?')).toBeTruthy();
   });
 
   test('quiet demo renders', async () => {
@@ -93,6 +103,14 @@ describe('Map tab', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  test('the open-late layer narrows the list to spots open past 11 PM today', async () => {
+    await renderRouter(routes, { initialUrl: '/map' });
+    expect(await screen.findByText(/^12 spots · New Brunswick$/)).toBeTruthy();
+    await press(screen.getByText('Open late'));
+    expect(screen.getByText(/^\d+ open late · New Brunswick$/)).toBeTruthy();
+    expect(screen.queryByText('Chang Library')).toBeNull(); // 9–5 branch is never "late"
+  });
+
   test('deep link switches area', async () => {
     await renderRouter(routes, { initialUrl: '/map?area=hoboken' });
     expect(await screen.findByText(/spots · Hoboken/)).toBeTruthy();
@@ -106,15 +124,25 @@ describe('Spot, why, check-in', () => {
     expect((await screen.findAllByText('Alexander Library')).length).toBeGreaterThan(0);
     expect(screen.getByText('Quiet Areas')).toBeTruthy();
     expect(screen.getByText('Mon–Thu')).toBeTruthy();
-    expect(screen.getByText(/libcal.rutgers.edu/)).toBeTruthy();
-    expect(screen.getByText(/Estimate for a typical library/)).toBeTruthy();
+    expect(screen.getByText(/Rutgers University Libraries · checked 2026-10-03/)).toBeTruthy();
+    expect(screen.getByText(/Estimate for a typical university library/)).toBeTruthy();
     expect(screen.getByText(/min walk from New Brunswick/)).toBeTruthy();
   });
 
   test('why screen shows the formula and confidence rules', async () => {
     await renderRouter(routes, { initialUrl: '/why/alexander-library' });
-    expect(await screen.findByText(/0.35 seats \+ 0.25 proximity/)).toBeTruthy();
-    expect(screen.getByText('Confidence rules')).toBeTruthy();
+    expect(await screen.findByText(/min walk from New Brunswick/)).toBeTruthy();
+    expect(screen.queryByText(/0.35 seats \+ 0.25 proximity/)).toBeNull(); // arithmetic is collapsed by default
+    await press(screen.getByTestId('why-math'));
+    expect(screen.getByText(/0.35 seats \+ 0.25 proximity/)).toBeTruthy();
+    expect(screen.getByText('Confidence')).toBeTruthy();
+  });
+
+  test('privacy screen lists what is shared and what never is', async () => {
+    await renderRouter(routes, { initialUrl: '/privacy' });
+    expect(await screen.findByText('Never shared')).toBeTruthy();
+    expect(screen.getByText('Anonymous check-ins')).toBeTruthy();
+    expect(screen.getByText(/Read once when you check in/)).toBeTruthy();
   });
 
   test('one-tap check-in is saved locally with an unverified proof and no fetch while offline', async () => {
@@ -125,6 +153,7 @@ describe('Spot, why, check-in', () => {
     const mine = getState().myCheckIns;
     expect(mine).toHaveLength(1);
     expect(mine[0]).toMatchObject({ venueId: 'alexander-library', level: 2, zoneId: null, synced: false, source: 'me' });
+    expect(mine[0].shownLevel === null || typeof mine[0].shownLevel === 'number').toBe(true);
     expect(mine[0].proof.distanceM).toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -138,7 +167,7 @@ describe('Focus tab', () => {
     await press(screen.getByTestId('session-start'));
     expect(getState().session?.shapeId).toBe('p25');
     expect(screen.getByText(/focus · block 1 of 4/)).toBeTruthy();
-    expect(screen.getByText('Your goals for this session')).toBeTruthy();
+    expect(screen.getByText('Goals')).toBeTruthy();
     actions.discardSession();
   });
 });
@@ -147,12 +176,12 @@ describe('Profile, prefs, blocks, data, onboarding', () => {
   test('profile renders stats and settings links', async () => {
     await renderRouter(routes, { initialUrl: '/profile' });
     expect(await screen.findByText('When you actually focus')).toBeTruthy();
-    expect(screen.getByText('Offline data & demo')).toBeTruthy();
+    expect(screen.getByText('Offline data')).toBeTruthy();
   });
 
   test('prefs saves a changed area', async () => {
     await renderRouter(routes, { initialUrl: '/prefs' });
-    expect(await screen.findByText('Your station')).toBeTruthy();
+    expect(await screen.findByText('Station')).toBeTruthy();
     await press(screen.getByText('Newark'));
     await press(screen.getByTestId('prefs-save'));
     expect(getState().prefs.area).toBe('newark');

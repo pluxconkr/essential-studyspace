@@ -7,6 +7,8 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type PressableProps, type StyleProp, type TextInputProps, type TextProps, type TextStyle, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { t } from '@/i18n';
+
 import { Icon, type IconName } from './icons';
 import { CELL_PAD, MIN_TAP, colors, fonts, radius, tabular, type } from './theme';
 
@@ -236,7 +238,7 @@ export function Button({
       testID={testID}
       style={({ pressed }) => [styles.button, size === 'sm' && styles.buttonSm, { backgroundColor: bg }, disabled && styles.disabled, pressed && !disabled && styles.pressed, style]}>
       {icon ? <Icon name={icon} size={18} color={fg} weight="semibold" /> : null}
-      <Text maxFontSizeMultiplier={1.5} style={[styles.buttonText, size === 'sm' && { fontSize: 15 }, { color: fg }]}>{title}</Text>
+      <Text maxFontSizeMultiplier={1.5} style={[styles.buttonText, size === 'sm' && styles.buttonTextSm, { color: fg }]}>{title}</Text>
     </Pressable>
   );
 }
@@ -280,11 +282,11 @@ export function Stepper({ label, value, min, max, onChange, hint, icon, last }: 
       last={last}
       trailing={
         <View style={styles.stepper} accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ now: value, min, max, text: String(value) }}>
-          <Pressable onPress={dec} accessibilityLabel={`Decrease ${label}`} accessibilityRole="button" disabled={value <= min} style={({ pressed }) => [styles.stepBtn, value <= min && styles.disabled, pressed && styles.pressed]}>
+          <Pressable onPress={dec} accessibilityLabel={t('common.decrease', { label })} accessibilityRole="button" disabled={value <= min} style={({ pressed }) => [styles.stepBtn, value <= min && styles.disabled, pressed && styles.pressed]}>
             <Text maxFontSizeMultiplier={1.3} style={styles.stepBtnText}>−</Text>
           </Pressable>
           <Text maxFontSizeMultiplier={1.3} style={[styles.stepValue, tabular]}>{value}</Text>
-          <Pressable onPress={inc} accessibilityLabel={`Increase ${label}`} accessibilityRole="button" disabled={value >= max} style={({ pressed }) => [styles.stepBtn, value >= max && styles.disabled, pressed && styles.pressed]}>
+          <Pressable onPress={inc} accessibilityLabel={t('common.increase', { label })} accessibilityRole="button" disabled={value >= max} style={({ pressed }) => [styles.stepBtn, value >= max && styles.disabled, pressed && styles.pressed]}>
             <Text maxFontSizeMultiplier={1.3} style={styles.stepBtnText}>+</Text>
           </Pressable>
         </View>
@@ -324,7 +326,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
         const on = o.value === value;
         return (
           <Pressable key={String(o.value)} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ selected: on, checked: on }} style={[styles.segment, on && styles.segmentOn]}>
-            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.segmentText, on && styles.segmentTextOn]}>{o.label}</Text>
+            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={[styles.segmentText, options.length >= 4 && styles.segmentTextSmall, on && styles.segmentTextOn]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -391,12 +393,13 @@ const styles = StyleSheet.create({
   calloutRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   button: { minHeight: 50, borderRadius: radius.button, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 18, paddingVertical: 12 },
   buttonSm: { minHeight: 36, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 10 },
-  buttonText: { fontSize: 17, fontWeight: '600', letterSpacing: -0.41 },
+  buttonText: { ...type.headline },
+  buttonTextSm: { ...type.control, fontWeight: type.headline.fontWeight },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.6 },
   stepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.fill, borderRadius: radius.control, padding: 2 },
   stepBtn: { width: 40, height: 32, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  stepBtnText: { fontSize: 22, fontWeight: '500', color: colors.ink, lineHeight: 26 },
+  stepBtnText: { ...type.title2, fontWeight: type.control.fontWeight },
   stepValue: { ...type.headline, minWidth: 28, textAlign: 'center' },
   toggle: { width: 51, height: 31, borderRadius: 16, backgroundColor: 'rgba(120,120,128,0.32)', padding: 2, justifyContent: 'center' },
   toggleOn: { backgroundColor: colors.green },
@@ -405,8 +408,9 @@ const styles = StyleSheet.create({
   segmented: { flexDirection: 'row', backgroundColor: colors.fill, borderRadius: 9, padding: 2 },
   segment: { flex: 1, minHeight: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 7, paddingVertical: 5, paddingHorizontal: 4 },
   segmentOn: { backgroundColor: colors.surface },
-  segmentText: { fontSize: 15, fontWeight: '500', color: colors.ink, textAlign: 'center' },
-  segmentTextOn: { fontWeight: '600' },
+  segmentText: { ...type.control, textAlign: 'center' },
+  segmentTextSmall: { ...type.controlSmall, textAlign: 'center' },
+  segmentTextOn: { fontWeight: type.headline.fontWeight },
   kv: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start', paddingVertical: 10, paddingRight: CELL_PAD },
 });
 

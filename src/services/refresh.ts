@@ -3,9 +3,9 @@
  * The UI is already drawn from local data (hours, typical pattern, own check-ins) before any of this starts.
  */
 import { cacheMetaRepo, dropLowPriority, isLowOnSpace, reportStorageNotice, sanitizeVenues, venueRepo } from '@/data/repos';
-import { fuse, proofStrength } from '@/domain/levels';
+import { fuse } from '@/domain/levels';
 import { nowIso, nowMs } from '@/domain/time';
-import type { AssetKey, CrowdReport, LiveLevel, Venue } from '@/domain/types';
+import type { AssetKey, LiveLevel, Venue } from '@/domain/types';
 import { actions, getState, isOfflineNow } from '@/store/appStore';
 
 import { fetchCrowd, postReport } from './crowdClient';
@@ -23,7 +23,8 @@ export interface RefreshResult {
 const VENUES_URL = process.env.EXPO_PUBLIC_VENUES_URL;
 
 function stamp(key: AssetKey, bytes: number, version: string) {
-  const meta = cacheMetaRepo.set({ key, fetchedAt: nowIso(), source: 'network', bytes, version });
+  // Device time on purpose: a demo scenario shifts the app clock, but a download happened when it happened.
+  const meta = cacheMetaRepo.set({ key, fetchedAt: new Date().toISOString(), source: 'network', bytes, version });
   actions.setCacheMeta(meta);
 }
 
@@ -40,7 +41,8 @@ export async function syncCheckIns(): Promise<number> {
   }
   const done: string[] = [];
   for (const c of pending) {
-    if (await postReport(c)) done.push(c.checkInId);
+    // 'stale' = older than the relay keeps; it will never be accepted, so stop retrying it.
+    if ((await postReport(c)) !== 'failed') done.push(c.checkInId);
   }
   actions.markCheckInsSynced(done);
   return done.length;
@@ -79,16 +81,15 @@ export async function refreshVenues(): Promise<RefreshResult['venues']> {
   }
 }
 
-/** Watched spots that are open and at/below the asked level right now (relay + own reports only; demo excluded). */
+/** Watched spots that are open and at/below the asked level right now. Other students' reports only — a watch must not fire on your own check-in. */
 export function watchHits(): { venue: Venue; live: LiveLevel }[] {
-  const { watches, venues, crowd, myCheckIns } = getState();
+  const { watches, venues, crowd } = getState();
   const now = nowMs();
   const hits: { venue: Venue; live: LiveLevel }[] = [];
   for (const w of watches) {
     const v = venues.find((x) => x.venueId === w.venueId);
     if (!v) continue;
-    const mine: CrowdReport[] = myCheckIns.filter((c) => c.venueId === v.venueId).map((c) => ({ venueId: c.venueId, zoneId: c.zoneId, level: c.level, at: c.at, weight: proofStrength(c.proof.distanceM, c.proof.gpsAccuracyM) }));
-    const live = fuse({ venue: v, reports: [...mine, ...(crowd?.reports[v.venueId] ?? [])], now });
+    const live = fuse({ venue: v, reports: crowd?.reports[v.venueId] ?? [], now });
     if (live.open && live.confidence !== 'none' && live.level <= w.notifyAtOrBelow) hits.push({ venue: v, live });
   }
   return hits;
@@ -112,7 +113,7 @@ export function refreshAll(): Promise<RefreshResult> {
     };
     const synced = await syncCheckIns().then(tick);
     const [crowd, venues] = await Promise.all([refreshCrowd().then(tick), VENUES_URL ? refreshVenues().then(tick) : refreshVenues()]);
-    const hits = crowd === 'ok' ? watchHits() : [];
+    const hits = crowd === 'ok' || crowd === 'not-configured' ? watchHits() : [];
     if (hits.length > 0) await notifyWatchHits(hits, nowIso());
     actions.setRefreshing(false, Date.now());
     return { crowd, venues, synced, watchHits: hits.length };

@@ -7,6 +7,8 @@
  * Every component is shown on the "Why this ranking?" screen. Closed venues are listed
  * separately with their next opening, never hidden.
  */
+import { t } from '@/i18n';
+
 import type { TermPhase } from './curve';
 import type { LatLng } from './geo';
 import { openState, type OpenState } from './hours';
@@ -93,11 +95,11 @@ export function rankVenue(venue: Venue, live: LiveLevel, ctx: RankContext): Rank
 
   const reasons: string[] = [];
   if (arrival.open) {
-    if (seats >= 0.6) reasons.push('seats likely when you arrive');
-    if (walkMin <= 10) reasons.push(`${walkMin} min from ${ctx.originLabel}`);
-    if (stayMin !== null && stayMin >= 180) reasons.push('open late');
-    if (stayMin !== null && stayMin < MIN_STAY_MIN) reasons.push(`closes ${stayMin} min after you arrive`);
-    if (noise === 1) reasons.push(`has a ${ctx.prefs.noisePref} zone`);
+    if (seats >= 0.6) reasons.push(t('rank.reason.seats'));
+    if (walkMin <= 10) reasons.push(t('rank.reason.near', { n: walkMin, from: ctx.originLabel }));
+    if (stayMin !== null && stayMin >= 180) reasons.push(t('rank.reason.late'));
+    if (stayMin !== null && stayMin < MIN_STAY_MIN) reasons.push(t('rank.reason.closesSoon', { n: stayMin }));
+    if (noise === 1) reasons.push(t('rank.reason.noise', { noise: t(`noisePref.${ctx.prefs.noisePref}` as const) }));
   }
   return { venue, live, state, walkMin, arrivalAt, arrival, stayMin, score, parts, reasons };
 }
@@ -116,18 +118,18 @@ export function rankVenues(venues: readonly Venue[], levels: Record<string, Live
 }
 
 function fallbackLevel(v: Venue): LiveLevel {
-  return { venueId: v.venueId, level: 1, levelHigh: 2, pct: 0.3, confidence: 'none', reports: 0, newestAt: null, prior: v.curveSource, open: true };
+  return { venueId: v.venueId, level: 1, levelHigh: 2, pct: 0.3, confidence: 'none', reports: 0, fresh: 0, newestAt: null, prior: v.curveSource, open: true };
 }
 
 /** Human-readable breakdown rows for the "Why this ranking?" screen. */
 export function explainRank(r: RankedVenue): { k: string; v: string }[] {
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   return [
-    { k: `Seats at arrival × ${RANK_WEIGHTS.seats}`, v: pct(r.parts.seats) },
-    { k: `Proximity × ${RANK_WEIGHTS.proximity}`, v: `${pct(r.parts.proximity)} (${r.walkMin} min walk)` },
-    { k: `Stays open × ${RANK_WEIGHTS.openFit}`, v: r.stayMin === null ? 'closed at arrival' : `${pct(r.parts.openFit)} (${r.stayMin} min after arrival)` },
-    { k: `Noise match × ${RANK_WEIGHTS.noise}`, v: pct(r.parts.noise) },
-    { k: `Amenities × ${RANK_WEIGHTS.amenities}`, v: pct(r.parts.amenities) },
-    { k: 'Score', v: r.score.toFixed(2) },
+    { k: t('rank.seats', { w: RANK_WEIGHTS.seats }), v: pct(r.parts.seats) },
+    { k: t('rank.proximity', { w: RANK_WEIGHTS.proximity }), v: t('rank.walk', { pct: pct(r.parts.proximity), n: r.walkMin }) },
+    { k: t('rank.open', { w: RANK_WEIGHTS.openFit }), v: r.stayMin === null ? t('rank.closedAtArrival') : t('rank.stay', { pct: pct(r.parts.openFit), n: r.stayMin }) },
+    { k: t('rank.noise', { w: RANK_WEIGHTS.noise }), v: pct(r.parts.noise) },
+    { k: t('rank.amenities', { w: RANK_WEIGHTS.amenities }), v: pct(r.parts.amenities) },
+    { k: t('rank.score'), v: r.score.toFixed(2) },
   ];
 }

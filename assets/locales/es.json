@@ -1,0 +1,4 @@
+{
+  "CFBundleDisplayName": "StudySpace",
+  "NSLocationWhenInUseUsageDescription": "StudySpace usa tu ubicación solo para ordenar los lugares de estudio por tiempo a pie y confirmar que estás en un lugar al registrarte. La ubicación precisa se descarta después y nunca se muestra a otros estudiantes."
+}

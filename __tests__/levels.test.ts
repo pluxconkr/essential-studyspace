@@ -1,5 +1,5 @@
 import { typicalPct } from '@/domain/curve';
-import { FUSION, LEVEL_BOUNDS, bucket, confidenceText, fuse, levelText, predictAt, proofStrength, recencyDecay } from '@/domain/levels';
+import { FUSION, LEVEL_BOUNDS, STRONG_PROOF, bucket, confidenceText, dedupeReports, fuse, fuseZones, latestReportDetails, levelText, predictAt, proofStrength, recencyDecay } from '@/domain/levels';
 import type { CrowdReport, Venue } from '@/domain/types';
 import venues from '@/assets/data/venues.json';
 
@@ -69,6 +69,22 @@ describe('fusion', () => {
     expect(levelText(l)).toMatch(/ to /);
   });
 
+  test('a single report without presence proof is low, not medium (spec §7: one unverified check-in → unverified)', () => {
+    const weak = fuse({ venue: alexander, reports: [rep(4, 5, STRONG_PROOF - 0.01)], now: NOW });
+    expect(weak.confidence).toBe('low');
+    expect(confidenceText(weak, NOW)).toBe('1 report, 5 min ago · unverified');
+    expect(weak.level).toBe(4); // it still moves the level — it is just labelled honestly
+    const two = fuse({ venue: alexander, reports: [rep(4, 5, 0.4), rep(3, 30, 0.4)], now: NOW });
+    expect(two.confidence).toBe('medium');
+  });
+
+  test('reports 90–180 min old are still "low · unverified" with an hour label, never "no live reports"', () => {
+    const old = fuse({ venue: alexander, reports: [rep(0, 100)], now: NOW });
+    expect(old.confidence).toBe('low');
+    expect(confidenceText(old, NOW)).toBe('1 report, 1 hour ago · unverified');
+    expect(old.reports).toBe(1);
+  });
+
   test('an old report is low confidence and labelled unverified; older than 3 h is ignored', () => {
     const low = fuse({ venue: alexander, reports: [rep(0, 70)], now: NOW });
     expect(low.confidence).toBe('low');
@@ -84,6 +100,27 @@ describe('fusion', () => {
     const prior = typicalPct(alexander, NOW);
     expect(fresh.pct).toBeLessThan(stale.pct);
     expect(Math.abs(stale.pct - prior)).toBeLessThan(Math.abs(fresh.pct - prior));
+  });
+
+  test('own synced check-ins are not double counted when they come back from the relay', () => {
+    const own = [rep(3, 4)];
+    const relayEcho = { ...rep(3, 4), at: new Date(Math.floor((NOW - 4 * 60_000) / 60_000) * 60_000).toISOString(), weight: 0.9 }; // minute-rounded copy
+    const other = rep(3, 7);
+    const merged = dedupeReports(own, [relayEcho, other]);
+    expect(merged).toHaveLength(2);
+    const alone = fuse({ venue: alexander, reports: dedupeReports(own, [relayEcho]), now: NOW });
+    expect(alone.confidence).toBe('medium'); // one person, one report
+    expect(alone.reports).toBe(1);
+  });
+
+  test('zone levels only for zones with recent reports; details come from the newest report that said something', () => {
+    const z = alexander.zones[0].zoneId;
+    const reports: CrowdReport[] = [{ ...rep(4, 3), zoneId: z, noise: 0, amenities: ['outlets'] }, { ...rep(1, 8), zoneId: null, noise: 2 }, { ...rep(2, 100), zoneId: alexander.zones[1].zoneId }];
+    const zones = fuseZones({ venue: alexander, reports, now: NOW });
+    expect(Object.keys(zones)).toEqual([z]); // the 100-min report in zone 2 is past the 90-min window
+    expect(zones[z].level).toBe(4);
+    expect(latestReportDetails(reports, NOW)).toEqual({ noise: 0, amenities: ['outlets'], at: reports[0].at });
+    expect(latestReportDetails([rep(1, 5)], NOW)).toBeNull();
   });
 
   test('closed venue reports closed', () => {

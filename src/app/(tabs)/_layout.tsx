@@ -1,9 +1,10 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { t } from '@/i18n';
 import { useAppState } from '@/store/appStore';
 import { Icon, type IconName } from '@/ui/icons';
-import { colors } from '@/ui/theme';
+import { colors, type } from '@/ui/theme';
 
 function TabIcon({ name, color }: { name: IconName; color: string }) {
   return <Icon name={name} size={24} color={color} weight="medium" />;
@@ -24,13 +25,13 @@ export default function TabLayout() {
         lazy: false,
         sceneStyle: { backgroundColor: colors.bg },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'Now', tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'now' : 'nowOutline'} color={String(color)} /> }} />
-      <Tabs.Screen name="map" options={{ title: 'Map', tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'map' : 'mapOutline'} color={String(color)} /> }} />
+      <Tabs.Screen name="index" options={{ title: t('tab.now'), tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'now' : 'nowOutline'} color={String(color)} /> }} />
+      <Tabs.Screen name="map" options={{ title: t('tab.map'), tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'map' : 'mapOutline'} color={String(color)} /> }} />
       <Tabs.Screen
         name="focus"
         options={{
-          title: 'Focus',
-          tabBarAccessibilityLabel: running ? 'Focus tab, session running' : 'Focus tab',
+          title: t('tab.focus'),
+          tabBarAccessibilityLabel: running ? t('tab.focusRunning') : t('tab.focusLabel'),
           tabBarIcon: ({ color, focused }) => (
             <View>
               <TabIcon name={focused ? 'focus' : 'focusOutline'} color={running ? colors.green : String(color)} />
@@ -45,6 +46,6 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   bar: { backgroundColor: 'rgba(249,249,249,0.94)', borderTopColor: colors.line, borderTopWidth: StyleSheet.hairlineWidth, height: Platform.OS === 'ios' ? 84 : 64, paddingTop: 6 },
-  label: { fontSize: 10.5, fontWeight: '500', marginTop: 1 },
+  label: { ...type.tabLabel, marginTop: 1 },
   dot: { position: 'absolute', top: -1, right: -4, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.green, borderWidth: 1.5, borderColor: '#F9F9F9' },
 });

@@ -5,9 +5,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { SymbolView, type SymbolWeight } from 'expo-symbols';
 import type { ComponentProps } from 'react';
-import { Platform, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import type { Amenity, VenueKind } from '@/domain/types';
+import type { Amenity, NoisePolicy, VenueKind } from '@/domain/types';
+import { t } from '@/i18n';
 
 type IonName = ComponentProps<typeof Ionicons>['name'];
 
@@ -32,6 +33,7 @@ const ICONS = {
   wifi: { sf: 'wifi', ion: 'wifi-outline' },
   quiet: { sf: 'speaker.slash.fill', ion: 'volume-mute-outline' },
   noise: { sf: 'speaker.wave.2.fill', ion: 'volume-medium-outline' },
+  murmur: { sf: 'speaker.wave.1.fill', ion: 'volume-low-outline' },
   group: { sf: 'person.3.fill', ion: 'people-outline' },
   solo: { sf: 'person.fill', ion: 'person-outline' },
   food: { sf: 'fork.knife', ion: 'restaurant-outline' },
@@ -88,11 +90,24 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
+/**
+ * Decorative by default: the adjacent text carries the meaning, so VoiceOver must not read symbol
+ * names ("hourglass", "duration"). Controls whose only content is an icon label themselves.
+ */
 export function Icon({ name, size = 20, color = '#0B0F19', weight = 'medium', style }: { name: IconName; size?: number; color?: string; weight?: SymbolWeight; style?: StyleProp<ViewStyle> }) {
   const def = ICONS[name];
   const fallback = <Ionicons name={def.ion} size={size} color={color} />;
-  if (Platform.OS !== 'ios') return fallback;
-  return <SymbolView name={def.sf as never} size={size} tintColor={color} weight={weight} resizeMode="scaleAspectFit" style={[{ width: size, height: size }, style]} fallback={fallback} />;
+  const glyph = Platform.OS === 'ios' ? <SymbolView name={def.sf as never} size={size} tintColor={color} weight={weight} resizeMode="scaleAspectFit" style={{ width: size, height: size }} fallback={fallback} /> : fallback;
+  return (
+    <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
+      {glyph}
+    </View>
+  );
+}
+
+/** One glyph per noise policy, used wherever a zone is listed. */
+export function noiseIcon(noise: NoisePolicy): IconName {
+  return noise === 'silent' ? 'quiet' : noise === 'low' ? 'murmur' : 'noise';
 }
 
 export function kindIcon(kind: VenueKind): IconName {
@@ -133,16 +148,5 @@ export function amenityIcon(a: Amenity): IconName {
   }
 }
 
-export const AMENITY_LABEL: Record<Amenity, string> = {
-  outlets: 'Outlets',
-  'wifi-eduroam': 'eduroam wifi',
-  'wifi-public': 'Public wifi',
-  'group-rooms': 'Group rooms',
-  computers: 'Computers',
-  printing: 'Printing',
-  cafe: 'Café inside',
-  'food-nearby': 'Food nearby',
-  'late-night': 'Open late',
-  'solo-desks': 'Solo desks',
-  'big-tables': 'Big tables',
-};
+/** "Outlets" — in the current language. */
+export const amenityLabel = (a: Amenity) => t(`amenity.${a}` as const);

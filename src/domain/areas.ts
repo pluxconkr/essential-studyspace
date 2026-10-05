@@ -20,11 +20,19 @@ export const AREA_NAME: Record<Area, string> = {
   princeton: 'Princeton',
 };
 
+/** Fits a quarter-width segmented control. */
+export const AREA_SHORT: Record<Area, string> = {
+  'new-brunswick': 'N. Brunswick',
+  newark: 'Newark',
+  hoboken: 'Hoboken',
+  princeton: 'Princeton',
+};
+
 export const AREA_BLURB: Record<Area, string> = {
-  'new-brunswick': 'Rutgers–New Brunswick · College Ave, Busch, Livingston, Douglass · NEC station',
-  newark: 'Rutgers–Newark, NJIT, Newark Public Library · Penn & Broad Street stations',
-  hoboken: 'Stevens, Hoboken Public Library · Hoboken Terminal (NJT · PATH · HBLR)',
-  princeton: 'Princeton Public Library · Princeton (Dinky) and Princeton Junction',
+  'new-brunswick': 'Rutgers · College Ave, Busch, Livingston, Douglass',
+  newark: 'Rutgers–Newark, NJIT, Newark Public Library',
+  hoboken: 'Stevens, Hoboken Public Library',
+  princeton: 'Princeton Public Library · Dinky and Princeton Junction',
 };
 
 export const AREA_BBOX: Record<Area, BBox> = {

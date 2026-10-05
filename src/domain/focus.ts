@@ -2,6 +2,8 @@
  * Focus-log statistics: streak, hours by hour-of-day, best block, where you focus.
  * Derived on device from the student-owned log. Never shared with venues or schools.
  */
+import { t } from '@/i18n';
+
 import { shiftDateKey, toEpoch, zonedParts } from './time';
 import type { FocusEntry, Venue } from './types';
 
@@ -92,7 +94,7 @@ export function focusByVenue(log: readonly FocusEntry[], venues: readonly Venue[
     m.set(e.venueId, cur);
   }
   return Array.from(m.entries())
-    .map(([venueId, v]) => ({ venueId, name: venueId ? (venues.find((x) => x.venueId === venueId)?.shortName ?? 'Removed spot') : 'Elsewhere', ...v }))
+    .map(([venueId, v]) => ({ venueId, name: venueId ? (venues.find((x) => x.venueId === venueId)?.shortName ?? t('focus.removedSpot')) : t('focus.elsewhere'), ...v }))
     .sort((a, b) => b.seconds - a.seconds);
 }
 
@@ -107,6 +109,6 @@ export function formatHourBand(startHour: number, hours = 2): string {
     return `${hh % 12 === 0 ? 12 : hh % 12}`;
   };
   const endH = startHour + hours;
-  const ampm = (h: number) => (((h % 24) + 24) % 24 < 12 ? 'AM' : 'PM');
+  const ampm = (h: number) => (((h % 24) + 24) % 24 < 12 ? t('time.am') : t('time.pm'));
   return ampm(startHour) === ampm(endH) ? `${f(startHour)}–${f(endH)} ${ampm(endH)}` : `${f(startHour)} ${ampm(startHour)}–${f(endH)} ${ampm(endH)}`;
 }

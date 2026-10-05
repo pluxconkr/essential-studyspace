@@ -10,7 +10,8 @@ import { files } from '@/data/files';
 import { resetAllData, venueRepo } from '@/data/repos';
 import { formatShort, formatStamp, isStale, relativeAgo } from '@/domain/time';
 import type { DemoScenario } from '@/domain/types';
-import { SCENARIO_LABEL, applyDemoScenario } from '@/services/demo';
+import { t, tn } from '@/i18n';
+import { applyDemoScenario, scenarioLabel } from '@/services/demo';
 import { refreshAll, type RefreshResult } from '@/services/refresh';
 import { actions, isOfflineNow, useAppState } from '@/store/appStore';
 import { useNow, useRealNow } from '@/store/derived';
@@ -19,8 +20,8 @@ import { Button, Callout, Cell, Group, ProgressBar, ProgressRing, SectionFooter,
 import { Screen } from '@/ui/Screen';
 import { colors, tabular, type } from '@/ui/theme';
 
-const kb = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
-const DROPPED_LABEL = { 'crowd-cache': 'the cached live levels', 'old-checkins': 'older check-ins (the newest 50 are kept)' } as const;
+const kb = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+const droppedLabel = (d: 'crowd-cache' | 'old-checkins') => (d === 'crowd-cache' ? t('data.dropped.crowd') : t('data.dropped.checkins'));
 
 export default function DataScreen() {
   const cacheMeta = useAppState((s) => s.cacheMeta);
@@ -39,16 +40,16 @@ export default function DataScreen() {
   // Cache time stamps are device time; a demo scenario shifts `now`, so ages use the real clock.
   const realNow = useRealNow();
   const free = files.availableBytes();
-  const freeText = Number.isFinite(free) ? `${kb(free)} free on this phone` : null;
+  const freeText = Number.isFinite(free) ? t('data.freeOnPhone', { size: kb(free) }) : null;
   const [last, setLast] = useState<RefreshResult | null>(null);
 
   const venueBytes = venueSource === 'network' ? venueRepo.bytes() : JSON.stringify(venues).length;
   const rows: { key: string; icon: IconName; name: string; size: string; saved: boolean; when: string; stale: boolean }[] = [
-    { key: 'venues', icon: 'library', name: `Spot directory · ${venues.length} spots`, size: kb(venueBytes), saved: true, when: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? `saved ${relativeAgo(cacheMeta.venues.fetchedAt, realNow)} · v${venueVersion}` : `bundled · v${venueVersion}`, stale: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? isStale(cacheMeta.venues.fetchedAt, realNow) : false },
-    { key: 'maps', icon: 'map', name: 'Maps · New Brunswick, Newark, Hoboken, Princeton', size: kb(mapBytes()), saved: true, when: 'bundled · OpenStreetMap vector lines', stale: false },
-    { key: 'crowd', icon: 'share', name: 'Live levels', size: crowd ? kb(JSON.stringify(crowd).length) : '—', saved: !!crowd, when: cacheMeta.crowd?.fetchedAt ? `checked ${relativeAgo(cacheMeta.crowd.fetchedAt, realNow)}${crowd && !crowd.configured ? ' · dev relay (memory)' : ''}` : 'not checked yet · typical pattern shown', stale: cacheMeta.crowd?.fetchedAt ? realNow - Date.parse(cacheMeta.crowd.fetchedAt) > 60 * 60_000 : false },
-    { key: 'checkins', icon: 'checkin', name: `Your check-ins · ${myCheckIns.length}`, size: kb(JSON.stringify(myCheckIns).length), saved: true, when: myCheckIns.some((c) => !c.synced) ? `${myCheckIns.filter((c) => !c.synced).length} not shared yet` : 'all shared or sharing off', stale: false },
-    { key: 'focus', icon: 'focus', name: `Focus log · ${focusLog.length} sessions`, size: kb(JSON.stringify(focusLog).length), saved: true, when: 'student-owned · never leaves the phone', stale: false },
+    { key: 'venues', icon: 'library', name: t('data.directory', { n: venues.length }), size: kb(venueBytes), saved: true, when: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? t('data.savedAgo', { ago: relativeAgo(cacheMeta.venues.fetchedAt, realNow), v: venueVersion }) : t('data.bundled', { v: venueVersion }), stale: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? isStale(cacheMeta.venues.fetchedAt, realNow) : false },
+    { key: 'maps', icon: 'map', name: t('data.maps'), size: kb(mapBytes()), saved: true, when: t('data.mapsWhen'), stale: false },
+    { key: 'crowd', icon: 'share', name: t('data.liveLevels'), size: crowd ? kb(JSON.stringify(crowd).length) : '—', saved: !!crowd, when: cacheMeta.crowd?.fetchedAt ? `${t('data.checkedAgo', { ago: relativeAgo(cacheMeta.crowd.fetchedAt, realNow) })}${crowd && !crowd.configured ? t('data.devRelay') : ''}` : t('data.notChecked'), stale: cacheMeta.crowd?.fetchedAt ? realNow - Date.parse(cacheMeta.crowd.fetchedAt) > 60 * 60_000 : false },
+    { key: 'checkins', icon: 'checkin', name: t('data.yourCheckIns', { n: myCheckIns.length }), size: kb(JSON.stringify(myCheckIns).length), saved: true, when: myCheckIns.some((c) => !c.synced) ? t('data.notSharedYet', { n: myCheckIns.filter((c) => !c.synced).length }) : t('data.allShared'), stale: false },
+    { key: 'focus', icon: 'focus', name: t('data.focusLog', { n: focusLog.length }), size: kb(JSON.stringify(focusLog).length), saved: true, when: t('data.focusLogWhen'), stale: false },
   ];
   const savedCount = rows.filter((r) => r.saved).length;
 
@@ -57,7 +58,7 @@ export default function DataScreen() {
   const exportLog = async () => {
     const payload = JSON.stringify({ exportedAt: new Date().toISOString(), focusLog, checkIns: myCheckIns }, null, 2);
     try {
-      await Share.share({ message: payload, title: 'StudySpace export' });
+      await Share.share({ message: payload, title: t('data.exportTitle') });
     } catch {
       /* cancelled */
     }
@@ -70,94 +71,89 @@ export default function DataScreen() {
       actions.rehydrate();
     };
     if (Platform.OS === 'web') {
-      if (typeof globalThis.confirm === 'function' ? globalThis.confirm('Erase all saved data on this device?') : true) doReset();
+      if (typeof globalThis.confirm === 'function' ? globalThis.confirm(t('data.resetWeb')) : true) doReset();
       return;
     }
-    Alert.alert('Reset app data', 'Erase preferences, check-ins, focus log, watches and cached levels on this device?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Erase', style: 'destructive', onPress: doReset },
+    Alert.alert(t('data.reset'), t('data.resetBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('data.erase'), style: 'destructive', onPress: doReset },
     ]);
   };
 
   return (
-    <Screen title="Offline data" largeTitle="Offline data" subtitle="What is saved on this phone, how big, and when" fallback="/" testID="data">
+    <Screen title={t('data.nav')} largeTitle={t('data.nav')} subtitle={t('data.subtitle')} fallback="/" testID="data">
       <Group style={{ marginTop: 8 }}>
         <Cell
           leading={
             <ProgressRing pct={(savedCount / rows.length) * 100} size={44} stroke={4} color={savedCount === rows.length ? colors.green : colors.amber}>
-              <Text maxFontSizeMultiplier={1.15} style={[styles.ringText, tabular, { color: savedCount === rows.length ? colors.green : colors.amber }]}>
+              <Text maxFontSizeMultiplier={1.15} style={[type.caption2, tabular, { color: savedCount === rows.length ? colors.green : colors.amber }]}>
                 {savedCount}/{rows.length}
               </Text>
             </ProgressRing>
           }
-          title={savedCount === rows.length ? 'Everything the app needs is on this phone' : 'Live levels not fetched yet'}
-          subtitle="Hours, the directory, the maps and your own data never need a signal. Live levels are the only thing that does."
+          title={savedCount === rows.length ? t('data.allSaved') : t('data.notFetched')}
+          subtitle={t('data.allSavedHint')}
           last
         />
       </Group>
-      <Button title={refreshing ? 'Refreshing…' : offline ? 'No signal — will retry automatically' : 'Refresh live levels now'} disabled={offline || refreshing} onPress={() => void run()} accessibilityHint="Uploads unsent check-ins and downloads recent reports for your area" />
+      <Button title={refreshing ? t('data.refreshing') : offline ? t('data.noSignal') : t('data.refresh')} disabled={offline || refreshing} onPress={() => void run()} accessibilityHint={t('data.refreshHint')} />
       {refreshing && progress ? (
         <Group padded style={{ marginTop: 10 }}>
-          <ProgressBar pct={(progress.done / progress.total) * 100} color={colors.tint} label={`${progress.done} of ${progress.total} steps finished`} />
-          <Text style={[type.footnote, tabular, { marginTop: 8 }]}>{`${progress.done} of ${progress.total} finished${freeText ? ` · ${freeText}` : ''}`}</Text>
+          <ProgressBar pct={(progress.done / progress.total) * 100} color={colors.tint} label={t('data.progress', { done: progress.done, total: progress.total })} />
+          <Text style={[type.footnote, tabular, { marginTop: 8 }]}>{`${t('data.progressLine', { done: progress.done, total: progress.total })}${freeText ? ` · ${freeText}` : ''}`}</Text>
         </Group>
       ) : null}
-      {last ? <SectionFooter style={{ textAlign: 'center' }}>{`Live levels: ${last.crowd} · Directory: ${last.venues === 'no-source' ? 'bundled (no feed configured)' : last.venues} · Shared ${last.synced} check-in${last.synced === 1 ? '' : 's'}${last.watchHits ? ` · ${last.watchHits} watch alert${last.watchHits === 1 ? '' : 's'}` : ''}`}</SectionFooter> : null}
+      {last ? <SectionFooter style={{ textAlign: 'center' }}>{`${t('data.lastResult', { crowd: last.crowd, dir: last.venues === 'no-source' ? t('data.bundledNoFeed') : last.venues, n: last.synced, s: last.synced === 1 ? '' : 's' })}${last.watchHits ? tn(last.watchHits, 'data.watchAlerts') : ''}`}</SectionFooter> : null}
 
       {storageNotice ? (
-        <Callout icon="alert" tone="amber" title={storageNotice.recovered ? 'Storage is almost full' : 'Storage is full — the last change could not be saved'}>
+        <Callout icon="alert" tone="amber" title={storageNotice.recovered ? t('data.storageAlmostFull') : t('data.storageFull')}>
           <Subhead>
-            {storageNotice.dropped.length > 0 ? `To make room the app gave up ${storageNotice.dropped.map((d) => DROPPED_LABEL[d]).join(' and ')}. ` : ''}
-            Your preferences, focus log and the directory are kept. Free some space, then refresh.
+            {storageNotice.dropped.length > 0 ? t('data.gaveUp', { what: storageNotice.dropped.map(droppedLabel).join(t('now.and')) }) : ''}
+            {t('data.kept')}
           </Subhead>
-          <Button title="OK" variant="tonal" size="sm" style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => actions.dismissStorageNotice()} />
+          <Button title={t('data.ok')} variant="tonal" size="sm" style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => actions.dismissStorageNotice()} />
         </Callout>
       ) : null}
 
-      <SectionHeader>Saved items</SectionHeader>
+      <SectionHeader>{t('data.savedItems')}</SectionHeader>
       <Group>
         {rows.map((r, i) => (
-          <Cell key={r.key} icon={r.icon} iconColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} title={r.name} subtitle={`${r.size} · ${r.when}${r.stale ? ' · older than expected' : ''}`} value={r.saved ? (r.stale ? 'Old' : 'Saved') : 'Missing'} valueColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} last={i === rows.length - 1} />
+          <Cell key={r.key} icon={r.icon} iconColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} title={r.name} subtitle={`${r.size} · ${r.when}${r.stale ? t('data.olderThanExpected') : ''}`} value={r.saved ? (r.stale ? t('data.old') : t('data.saved')) : t('data.missing')} valueColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} last={i === rows.length - 1} />
         ))}
       </Group>
-      <SectionFooter>If storage runs out, cached live levels and old check-ins are dropped first. Preferences, the focus log, the directory and the maps are kept to the end. Total footprint is under 1 MB.{freeText ? ` ${freeText[0].toUpperCase()}${freeText.slice(1)}.` : ''}</SectionFooter>
+      <SectionFooter>{t('data.footprint')}{freeText ? ` ${freeText[0].toUpperCase()}${freeText.slice(1)}.` : ''}</SectionFooter>
 
-      <SectionHeader>Sharing & notifications</SectionHeader>
+      <SectionHeader>{t('data.sharing')}</SectionHeader>
       <Group>
-        <Toggle icon="share" label="Share my check-ins anonymously" value={settings.shareCheckIns} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint="Venue, zone, level and a minute-rounded time. No name, no account, no notes, no location." />
-        <Toggle icon="bell" label="Notifications" value={settings.notificationsEnabled} onChange={(v) => actions.patchSettings({ notificationsEnabled: v })} hint="Watched spots clearing up, and focus-block changes. Local only." last />
+        <Toggle icon="share" label={t('data.shareLabel')} value={settings.shareCheckIns} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={t('data.shareHint')} />
+        <Toggle icon="bell" label={t('data.notifications')} value={settings.notificationsEnabled} onChange={(v) => actions.patchSettings({ notificationsEnabled: v })} hint={t('data.notifHint')} last />
       </Group>
 
-      <SectionHeader>Demo & testing</SectionHeader>
+      <SectionHeader>{t('data.demo')}</SectionHeader>
       <Group>
         <Cell
           icon="flask"
-          title="Scenario"
-          subtitle={settings.demoScenario === 'live' ? 'Real data only' : `Simulated reports · clock set to ${formatShort(now)}`}
-          trailing={<Segmented<DemoScenario> label="Demo scenario" options={(['live', 'finals', 'quiet', 'late'] as const).map((v) => ({ value: v, label: SCENARIO_LABEL[v] }))} value={settings.demoScenario} onChange={(v) => applyDemoScenario(v)} />}
+          title={t('data.scenario')}
+          subtitle={settings.demoScenario === 'live' ? t('data.realData') : t('data.clockSet', { time: formatShort(now) })}
+          trailing={<Segmented<DemoScenario> label={t('data.demoScenario')} options={(['live', 'finals', 'quiet', 'late'] as const).map((v) => ({ value: v, label: scenarioLabel(v) }))} value={settings.demoScenario} onChange={(v) => applyDemoScenario(v)} />}
         />
-        <Toggle icon="offline" label="Simulate no signal" value={settings.simulateOffline} onChange={(v) => actions.patchSettings({ simulateOffline: v })} hint="Shows the OFFLINE banner and blocks network calls" last />
+        <Toggle icon="offline" label={t('data.simulate')} value={settings.simulateOffline} onChange={(v) => actions.patchSettings({ simulateOffline: v })} last />
       </Group>
-      <SectionFooter>Demo reports are labelled everywhere they appear and never uploaded. For the real test use airplane mode: quit the app, turn airplane mode on, relaunch. Every tab must still open with hours and the typical pattern.</SectionFooter>
+      <SectionFooter>{t('data.demoFooter')}</SectionFooter>
 
-      <SectionHeader>Your data</SectionHeader>
+      <SectionHeader>{t('data.yourData')}</SectionHeader>
       <Group>
-        <Cell icon="document" title="Export focus log & check-ins" subtitle="JSON via the share sheet. It is yours." accessory="chevron" onPress={() => void exportLog()} last />
+        <Cell icon="document" title={t('data.export')} subtitle="JSON" accessory="chevron" onPress={() => void exportLog()} last />
       </Group>
 
-      <SectionHeader>About the data</SectionHeader>
+      <SectionHeader>{t('data.about')}</SectionHeader>
       <Group padded>
-        <Text style={type.footnote}>
-          Hours: published schedules of Rutgers University Libraries (LibCal), NJIT Library, Stevens Library, New Brunswick Free Public Library, Newark Public Library, Hoboken Public Library and Princeton Public Library, read 3 Oct 2026 — see docs/venue-sources.md. Café hours from a public listing. Coordinates and map lines: © OpenStreetMap contributors, ODbL 1.0 — openstreetmap.org/copyright. Transit modes: NJ Transit, PATH and Amtrak public maps. Typical-day curves are estimates and say so. No venue is a partner; no endorsement is implied.
-        </Text>
-        <Text style={[type.footnote, tabular, { marginTop: 8 }]}>Last live-level check: {cacheMeta.crowd?.fetchedAt ? formatStamp(cacheMeta.crowd.fetchedAt) : 'never'}</Text>
+        <Text style={type.footnote}>{t('data.aboutText')}</Text>
+        <Text style={[type.footnote, tabular, { marginTop: 8 }]}>{t('data.lastCheck', { when: cacheMeta.crowd?.fetchedAt ? formatStamp(cacheMeta.crowd.fetchedAt) : t('time.never') })}</Text>
       </Group>
 
-      <Button title="Reset app data" variant="secondary" onPress={confirmReset} style={{ marginTop: 8 }} />
+      <Button title={t('data.reset')} variant="secondary" onPress={confirmReset} style={{ marginTop: 8 }} />
     </Screen>
   );
 }
 
-const styles = {
-  ringText: { fontSize: 11, fontWeight: '600' as const },
-};

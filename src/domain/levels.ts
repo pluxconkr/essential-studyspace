@@ -6,28 +6,38 @@
  * app shows a range ("Filling to Packed"). Weights are config, not code, and re-fit later
  * against ground truth (door counters) once a venue has them.
  */
+import { t, tn } from '@/i18n';
+
 import type { TermPhase } from './curve';
 import { typicalPct } from './curve';
 import { isOpenAt } from './hours';
 import { isWeekend, toEpoch } from './time';
-import type { Confidence, CrowdReport, Level, LiveLevel, Venue } from './types';
+import type { Amenity, Confidence, CrowdReport, Level, LiveLevel, NoiseReport, Venue } from './types';
 
 export interface LevelMeta {
   level: Level;
-  label: string;
-  blurb: string;
   tone: 'green' | 'amber' | 'red';
 }
 
 export const LEVELS: readonly LevelMeta[] = [
-  { level: 0, label: 'Empty', blurb: 'plenty of seats', tone: 'green' },
-  { level: 1, label: 'Chill', blurb: 'easy to find a seat', tone: 'green' },
-  { level: 2, label: 'Filling', blurb: 'some seats, maybe not your favourite', tone: 'amber' },
-  { level: 3, label: 'Packed', blurb: "you'll be hunting", tone: 'red' },
-  { level: 4, label: 'Full', blurb: 'expect to wait or share', tone: 'red' },
+  { level: 0, tone: 'green' },
+  { level: 1, tone: 'green' },
+  { level: 2, tone: 'amber' },
+  { level: 3, tone: 'red' },
+  { level: 4, tone: 'red' },
 ] as const;
 
-export const LEVEL_LABEL: Record<Level, string> = { 0: 'Empty', 1: 'Chill', 2: 'Filling', 3: 'Packed', 4: 'Full' };
+export const ALL_LEVELS: readonly Level[] = [0, 1, 2, 3, 4];
+
+/** "Packed" — in the current language. */
+export const levelLabel = (l: Level) => t(`level.${l}` as const);
+/** "you'll be hunting" */
+export const levelBlurb = (l: Level) => t(`level.blurb.${l}` as const);
+/** "low murmur" */
+export const noiseLabel = (n: NoiseReport) => t(`noise.${n}` as const);
+
+/** A report whose phone was close enough to be sure it was there. Weaker ones never publish above "low" on their own. */
+export const STRONG_PROOF = 0.65;
 
 /** Upper bounds of each bucket (share of capacity). */
 export const LEVEL_BOUNDS = [0.2, 0.45, 0.7, 0.9] as const;
@@ -98,14 +108,14 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
   const weekend = isWeekend(now);
   const prior = typicalPct(venue, now, phase);
 
-  type R = { level: Level; ageMin: number; w: number };
+  type R = { level: Level; ageMin: number; w: number; proof: number };
   const live: R[] = [];
   for (const r of reports) {
     const t = toEpoch(r.at);
     if (!Number.isFinite(t) || t > now + 5 * 60_000) continue;
     const ageMin = (now - t) / 60_000;
     if (ageMin > FUSION.maxAgeMin) continue;
-    live.push({ level: r.level, ageMin, w: FUSION.reportBase * r.weight * recencyDecay(ageMin, weekend) });
+    live.push({ level: r.level, ageMin, w: FUSION.reportBase * r.weight * recencyDecay(ageMin, weekend), proof: r.weight });
   }
   live.sort((a, b) => a.ageMin - b.ageMin);
 
@@ -120,14 +130,16 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
 
   const fresh = live.filter((r) => r.ageMin <= FUSION.freshMin);
   const recent = live.filter((r) => r.ageMin <= FUSION.recentMin);
-  const stale = live.filter((r) => r.ageMin <= FUSION.staleMin);
+  const strongRecent = recent.filter((r) => r.proof >= STRONG_PROOF);
   const levelsOf = (rs: R[]) => rs.map((r) => r.level);
   const spread = (rs: R[]) => (rs.length ? Math.max(...levelsOf(rs)) - Math.min(...levelsOf(rs)) : 0);
 
+  // high: two fresh reports that agree · medium: one recent report with real presence proof, or two of any strength
+  // low: anything else still inside the 3-hour window (shown as "unverified") · none: no live report at all
   let confidence: Confidence;
   if (fresh.length >= 2 && spread(fresh) <= 1) confidence = 'high';
-  else if (recent.length >= 1) confidence = 'medium';
-  else if (stale.length >= 1) confidence = 'low';
+  else if (strongRecent.length >= 1 || recent.length >= 2) confidence = 'medium';
+  else if (live.length >= 1) confidence = 'low';
   else confidence = 'none';
 
   // Range: one level when confident; the spread of recent reports when they disagree;
@@ -150,6 +162,7 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
     pct,
     confidence,
     reports: live.length,
+    fresh: fresh.length,
     newestAt: newest,
     prior: open ? venue.curveSource : null,
     open,
@@ -158,24 +171,72 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
 
 /** "Filling" or "Filling to Packed". Never a bare percentage. */
 export function levelText(l: Pick<LiveLevel, 'level' | 'levelHigh'>): string {
-  return l.levelHigh > l.level ? `${LEVEL_LABEL[l.level]} to ${LEVEL_LABEL[l.levelHigh]}` : LEVEL_LABEL[l.level];
+  return l.levelHigh > l.level ? t('level.range', { low: levelLabel(l.level), high: levelLabel(l.levelHigh) }) : levelLabel(l.level);
 }
 
 /** The honesty line under a level: where it came from and how old it is. */
 export function confidenceText(l: LiveLevel, now: number): string {
-  if (!l.open) return 'Closed now';
+  if (!l.open) return t('level.closedNow');
   const age = l.newestAt ? Math.max(0, Math.round((now - toEpoch(l.newestAt)) / 60_000)) : null;
-  const ageTxt = age === null ? '' : age < 1 ? 'just now' : `${age} min ago`;
+  const ago = age === null ? '' : age < 1 ? t('time.justNow') : age < 60 ? t('time.minAgo', { n: age }) : tn(Math.floor(age / 60), 'time.hoursAgo');
   switch (l.confidence) {
     case 'high':
-      return `${l.reports} reports agree · newest ${ageTxt}`;
+      // Only the fresh reports were tested for agreement, so that is the number to print.
+      return t('level.high', { n: l.fresh, ago });
     case 'medium':
-      return l.reports === 1 ? `1 report, ${ageTxt}` : `${l.reports} reports · newest ${ageTxt}`;
+      return tn(l.reports, 'level.medium', { ago });
     case 'low':
-      return `${l.reports === 1 ? '1 report' : `${l.reports} reports`}, ${ageTxt} · unverified`;
+      return tn(l.reports, 'level.low', { ago });
     default:
-      return l.prior === 'venue' ? 'Venue estimate · no live reports' : 'Typical pattern · no live reports';
+      return l.prior === 'venue' ? t('level.noneVenue') : t('level.noneTypical');
   }
+}
+
+/**
+ * Merge own reports with relay reports, dropping relay rows that are the phone's own check-in coming back
+ * (same spot, zone and level within a minute). Without this one student could read as "2 reports agree".
+ */
+export function dedupeReports(own: readonly CrowdReport[], relay: readonly CrowdReport[]): CrowdReport[] {
+  const out: CrowdReport[] = [...own];
+  for (const r of relay) {
+    const t = toEpoch(r.at);
+    const dup = own.some((o) => o.venueId === r.venueId && (o.zoneId ?? null) === (r.zoneId ?? null) && o.level === r.level && Math.abs(toEpoch(o.at) - t) < 90_000);
+    if (!dup) out.push(r);
+  }
+  return out;
+}
+
+const ageMinutes = (at: string, now: number) => (now - toEpoch(at)) / 60_000;
+
+/** Per-zone levels for the zones that have at least one report in the last 90 minutes ("4F silent is full, 2F is chill"). */
+export function fuseZones({ venue, reports, now, phase = 'regular' }: FusionInput): Record<string, LiveLevel> {
+  const out: Record<string, LiveLevel> = {};
+  for (const z of venue.zones) {
+    const zr = reports.filter((r) => r.zoneId === z.zoneId && ageMinutes(r.at, now) <= FUSION.staleMin);
+    if (zr.length === 0) continue;
+    out[z.zoneId] = fuse({ venue, reports: zr, now, phase });
+  }
+  return out;
+}
+
+export interface ReportDetails {
+  noise: NoiseReport | null;
+  amenities: Amenity[];
+  at: string;
+}
+
+/** The newest recent report that said anything about noise or what was available. */
+export function latestReportDetails(reports: readonly CrowdReport[], now: number): ReportDetails | null {
+  let best: CrowdReport | null = null;
+  for (const r of reports) {
+    const age = ageMinutes(r.at, now);
+    if (age < 0 || age > FUSION.staleMin) continue;
+    if (r.noise === null || r.noise === undefined) {
+      if (!r.amenities || r.amenities.length === 0) continue;
+    }
+    if (!best || toEpoch(r.at) > toEpoch(best.at)) best = r;
+  }
+  return best ? { noise: best.noise ?? null, amenities: best.amenities ?? [], at: best.at } : null;
 }
 
 /** Predicted level at a future instant: live level drifts back to the typical curve as the arrival time moves away. */

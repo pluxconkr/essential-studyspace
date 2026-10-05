@@ -3,19 +3,26 @@
  * phone that sleeps for twenty minutes rejoins at the right block instead of drifting.
  * No ticking counter is ever persisted — only the start time and the pauses.
  */
+import { t } from '@/i18n';
+
 import { toEpoch } from './time';
 import type { FocusEntry, Session, TimerShape, TimerShapeId } from './types';
 
 export const TIMER_SHAPES: readonly TimerShape[] = [
-  { id: 'p25', label: '25 / 5 × 4', focusMin: 25, breakMin: 5, blocks: 4, blurb: 'Four short blocks. Good for problem sets.' },
-  { id: 'p50', label: '50 / 10 × 3', focusMin: 50, breakMin: 10, blocks: 3, blurb: 'Lecture-length blocks. Good for reading.' },
-  { id: 'p90', label: '90 / 15 × 2', focusMin: 90, breakMin: 15, blocks: 2, blurb: 'Deep work. Good for writing.' },
-  { id: 'free', label: 'Free', focusMin: 0, breakMin: 0, blocks: 1, blurb: 'Open-ended. Counts time until you stop.' },
+  { id: 'p25', label: '25 / 5 × 4', focusMin: 25, breakMin: 5, blocks: 4 },
+  { id: 'p50', label: '50 / 10 × 3', focusMin: 50, breakMin: 10, blocks: 3 },
+  { id: 'p90', label: '90 / 15 × 2', focusMin: 90, breakMin: 15, blocks: 2 },
+  { id: 'free', label: 'Free', focusMin: 0, breakMin: 0, blocks: 1 },
 ] as const;
 
 export function shapeById(id: TimerShapeId): TimerShape {
   return TIMER_SHAPES.find((s) => s.id === id) ?? TIMER_SHAPES[0];
 }
+
+/** One-line description of a timer shape, in the current language. */
+export const shapeBlurb = (id: TimerShapeId) => t(`timer.${id}` as const);
+/** Display label; "Free" is the only one that is a word. */
+export const shapeLabel = (s: TimerShape) => (s.id === 'free' ? t('timer.freeLabel') : s.label);
 
 export interface Block {
   index: number; // 0-based block number

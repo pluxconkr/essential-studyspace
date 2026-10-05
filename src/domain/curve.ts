@@ -3,7 +3,9 @@
  * "estimate" everywhere they appear, until a venue declares its own curve or real reports exist.
  * Values are relative occupancy 0..1 by local hour; the term phase scales them.
  */
-import { zonedParts } from './time';
+import { t } from '@/i18n';
+
+import { formatMinutesShort, zonedParts } from './time';
 import type { Venue, VenueKind } from './types';
 
 export type TermPhase = 'regular' | 'finals' | 'break';
@@ -27,12 +29,8 @@ const WEEKEND: Record<VenueKind, number[]> = {
 /** Finals push every library toward full; breaks empty the campus. Capped at 1. */
 export const TERM_MULTIPLIER: Record<TermPhase, number> = { regular: 1, finals: 1.35, break: 0.4 };
 
-export const KIND_LABEL: Record<VenueKind, string> = {
-  library: 'university library',
-  'public-library': 'public library',
-  'student-center': 'student center',
-  cafe: 'café',
-};
+/** "university library" — in the current language. */
+export const kindLabel = (kind: VenueKind) => t(`kind.${kind}` as const);
 
 /** The 24-value curve a venue uses: its own declared curve, else the per-kind estimate. */
 export function curveFor(venue: Pick<Venue, 'kind' | 'typicalCurve'>, weekend: boolean): number[] {
@@ -56,8 +54,8 @@ export function explainTypical(venue: Pick<Venue, 'kind' | 'typicalCurve' | 'cur
   const p = zonedParts(at);
   const weekend = p.weekday === 0 || p.weekday === 6;
   const pct = Math.round(typicalPct(venue, at, phase) * 100);
-  const who = venue.curveSource === 'venue' ? 'the curve this venue declared' : `a typical ${KIND_LABEL[venue.kind]} pattern`;
-  const when = `${weekend ? 'a weekend' : 'a weekday'} at ${p.hour % 12 === 0 ? 12 : p.hour % 12} ${p.hour < 12 ? 'AM' : 'PM'}`;
-  const term = phase === 'finals' ? ` Finals multiply it by ${TERM_MULTIPLIER.finals}.` : phase === 'break' ? ` Break weeks multiply it by ${TERM_MULTIPLIER.break}.` : '';
-  return `${pct}% of a busy day, from ${who} on ${when}.${term} This is an estimate, not a measurement — a live report always outweighs it.`;
+  const who = venue.curveSource === 'venue' ? t('curve.whoVenue') : t('curve.whoKind', { kind: kindLabel(venue.kind) });
+  const when = t('curve.at', { day: weekend ? t('curve.weekend') : t('curve.weekday'), time: formatMinutesShort(p.hour * 60) });
+  const term = phase === 'finals' ? t('curve.finals', { x: TERM_MULTIPLIER.finals }) : phase === 'break' ? t('curve.break', { x: TERM_MULTIPLIER.break }) : '';
+  return t('curve.explain', { pct, who, when, term });
 }

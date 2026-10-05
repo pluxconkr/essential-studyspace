@@ -14,8 +14,18 @@ No venue is a partner and none was contacted. Capacities are `null` everywhere b
 | Mabel Smith Douglass Library, 8 Chapel Dr | libcal.rutgers.edu/hours — same as Carr | Address from the Rutgers Libraries locations index. |
 | Art Library, 71 Hamilton St | libcal.rutgers.edu/hours — Mon–Fri 9 AM–5 PM, closed weekends | In the Zimmerli Art Museum building; pin is the museum entrance (medium confidence). |
 | John Cotton Dana Library (Rutgers–Newark), 185 University Ave | libcal.rutgers.edu/hours — Sun 2–10 PM, Mon–Thu 8 AM–12 AM, Fri 8 AM–6 PM, Sat 9 AM–5:30 PM | Entry rule ("current physical RU ID card or physical government-issued ID") from libraries.rutgers.edu/newark/visit-study. Phone 973-353-5161. |
+| Stephen and Lucy Chang Science Library, 59 Dudley Rd (Foran Hall, Cook) | libcal.rutgers.edu/hours — Mon–Fri 9 AM–5 PM, closed weekends | Added 2026-10-04. Pin is Foran Hall, which houses the library. |
+| Mathematical Sciences and Physics Library, 110 Frelinghuysen Rd (Hill Center, Busch) | libcal.rutgers.edu/hours — Mon–Fri 9 AM–5 PM, closed weekends | Added 2026-10-04. Pin is the Hill Center. |
 
-Also considered and left out of v1: Chang Library (Cook) and Math & Physics Library (Busch) — small branches, Mon–Fri 9–5 — can be added from the same LibCal page; Smith and RWJ health-sciences libraries are medical-school spaces.
+Left out on purpose: Smith and RWJ health-sciences libraries are medical-school spaces.
+
+## Campus safety numbers (shown on spots that stay open late)
+
+| Campus | Number | Source |
+|---|---|---|
+| Rutgers (any campus) | RUPD non-emergency and walking escort 732-932-7211; Knight Mover shuttle 732-932-7433 | ipo.rutgers.edu/publicsafety/rupd/escorts and newbrunswick.rutgers.edu › Campus Safety, read 2026-10-04 |
+| NJIT | Public Safety escort (973) 596-3120 | njit.edu/publicsafety/escort-service.php, read 2026-10-04 |
+| Stevens | Campus Police non-emergency and escort 201-216-5105 | stevens.edu/campus-police, read 2026-10-04 |
 
 ## Rutgers student centers
 

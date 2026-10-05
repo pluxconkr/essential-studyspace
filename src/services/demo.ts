@@ -6,7 +6,8 @@
 import { AREA_BBOX } from '@/domain/areas';
 import { inBBox } from '@/domain/geo';
 import { isOpenAt } from '@/domain/hours';
-import { nowIso, setClockOffset, zonedParts, zonedToEpoch } from '@/domain/time';
+import { setClockOffset, zonedParts, zonedToEpoch } from '@/domain/time';
+import { t } from '@/i18n';
 import type { CrowdReport, DemoScenario, Level, Venue } from '@/domain/types';
 import { actions, getState } from '@/store/appStore';
 
@@ -17,12 +18,7 @@ export const SCENARIO_CLOCK: Record<Exclude<DemoScenario, 'live'>, number> = {
   late: 23 * 60 + 35, // 11:35 PM — most places close at midnight
 };
 
-export const SCENARIO_LABEL: Record<DemoScenario, string> = {
-  live: 'Live',
-  finals: 'Finals',
-  quiet: 'Quiet',
-  late: 'Late night',
-};
+export const scenarioLabel = (s: DemoScenario) => t(`demo.${s}` as const);
 
 /** Clock offset that makes "now" read as the scenario time on the current local date (weekday scenarios move to the next weekday). */
 export function clockOffsetFor(scenario: DemoScenario, realNow: number = Date.now()): number {
@@ -93,4 +89,3 @@ export function isDemoActive(): boolean {
   return getState().settings.demoScenario !== 'live';
 }
 
-export const DEMO_NOTE = `Demo scenario · simulated reports, clock shifted · ${nowIso().slice(0, 10)}`;

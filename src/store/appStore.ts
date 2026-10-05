@@ -12,7 +12,6 @@ import {
   crowdRepo,
   focusLogRepo,
   initStorage,
-  locationRepo,
   onStorageNotice,
   prefsRepo,
   sessionRepo,
@@ -141,7 +140,6 @@ export function hydrate(): AppState {
     focusLog: focusLogRepo.getAll(),
     watches: watchRepo.getAll(),
     cacheMeta: cacheMetaRepo.getAll(),
-    location: locationRepo.get(),
     storageNotice: storageNoticeRepo.get(),
   };
   emit();
@@ -237,8 +235,8 @@ export const actions = {
   setNetwork(n: NetworkInfo) {
     setState({ network: n });
   },
+  /** The fix lives in memory only: it is compared with a spot and then forgotten with the process. */
   setLocation(fix: LocationFix | null, status: AppState['locationStatus']) {
-    if (fix) locationRepo.set(fix);
     setState({ location: fix ?? state.location, locationStatus: status });
   },
   setRefreshing(refreshing: boolean, lastRefreshAt?: number) {

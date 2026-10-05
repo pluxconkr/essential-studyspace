@@ -13,8 +13,8 @@ const list = venues.venues as unknown as Venue[];
 const sts = stations.stations as Station[];
 
 describe('bundled venue directory', () => {
-  test('17 venues across four areas with unique ids and every provenance field', () => {
-    expect(list.length).toBeGreaterThanOrEqual(17);
+  test('19 venues across four areas with unique ids and every provenance field', () => {
+    expect(list.length).toBeGreaterThanOrEqual(19);
     expect(new Set(list.map((v) => v.venueId)).size).toBe(list.length);
     for (const a of AREAS) expect(list.some((v) => v.area === a)).toBe(true);
     for (const v of list) {
@@ -28,6 +28,7 @@ describe('bundled venue directory', () => {
       expect(['high', 'medium', 'low']).toContain(v.coordConfidence);
       expect(v.zones.length).toBeGreaterThan(0);
       expect(v.capacity).toBeNull(); // nobody publishes one; the app must not invent it
+      for (const z of v.zones) if (z.accessibleSeats !== undefined) expect(z.accessibleSeats === null || Number.isInteger(z.accessibleSeats)).toBe(true);
       expect(['estimate', 'venue']).toContain(v.curveSource);
     }
   });
@@ -49,7 +50,7 @@ describe('bundled venue directory', () => {
 
   test('the Rutgers libraries carry the LibCal source and the renamed Carr Library is present', () => {
     const ru = list.filter((v) => v.hoursSource.includes('libcal.rutgers.edu'));
-    expect(ru.map((v) => v.venueId)).toEqual(expect.arrayContaining(['alexander-library', 'carr-library', 'lsm', 'douglass-library', 'art-library', 'dana-library']));
+    expect(ru.map((v) => v.venueId)).toEqual(expect.arrayContaining(['alexander-library', 'carr-library', 'lsm', 'douglass-library', 'art-library', 'chang-library', 'math-physics-library', 'dana-library']));
     expect(list.find((v) => v.venueId === 'carr-library')!.notes).toMatch(/Kilmer/);
   });
 

@@ -3,7 +3,9 @@
  * Closing past midnight ("26:00") is handled by also checking yesterday's hours.
  * Hours are a first-class feed: a student who travels to a closed building deletes the app.
  */
-import { hhmmToMinutes, shiftDateKey, weekdayOf, zonedParts, zonedToEpoch } from './time';
+import { t } from '@/i18n';
+
+import { dayName, formatMinutesShort, hhmmToMinutes, shiftDateKey, weekdayOf, zonedParts, zonedToEpoch } from './time';
 import type { DayHours, HoursException, Venue } from './types';
 
 export interface ResolvedDay {
@@ -91,6 +93,14 @@ export function minutesToClose(state: OpenState, now: number): number | null {
   return Math.max(0, Math.round((state.closesAt - now) / 60_000));
 }
 
+/** A spot "opens late" when today's hours run to 11 PM or beyond (the commuter's question after dinner). */
+export const LATE_CLOSE_MIN = 23 * 60;
+
+export function opensLate(venue: Venue, now: number): boolean {
+  const d = hoursOn(venue, zonedParts(now).dateKey).hours;
+  return !!d && hhmmToMinutes(d.close) >= LATE_CLOSE_MIN;
+}
+
 /** "Closing soon" = open and under an hour left. */
 export const CLOSING_SOON_MIN = 60;
 
@@ -99,26 +109,32 @@ export function isClosingSoon(state: OpenState, now: number): boolean {
   return m !== null && m <= CLOSING_SOON_MIN;
 }
 
-/** "8:00 AM – 2:00 AM" / "Closed" */
-export function formatDayHours(h: DayHours | null): string {
-  if (!h) return 'Closed';
-  const o = hhmmToMinutes(h.open);
-  const c = hhmmToMinutes(h.close);
-  if (o === 0 && c === 1440) return 'Open 24 hours';
-  return `${fmt(o)} – ${fmt(c)}${c > 1440 ? ' (next day)' : ''}`;
+/** True for a 00:00–24:00 day (an all-day exception). */
+export function isAllDay(h: DayHours | null): boolean {
+  return !!h && hhmmToMinutes(h.open) === 0 && hhmmToMinutes(h.close) === 1440;
 }
 
-function fmt(min: number): string {
-  const m = ((min % 1440) + 1440) % 1440;
-  const h24 = Math.floor(m / 60);
-  const mm = m % 60;
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return mm === 0 ? `${h12} ${h24 < 12 ? 'AM' : 'PM'}` : `${h12}:${String(mm).padStart(2, '0')} ${h24 < 12 ? 'AM' : 'PM'}`;
+/** "until 2:00 AM" / "until midnight" / "open 24 hours" — for one-line row subtitles. */
+export function untilLabel(state: OpenState): string | null {
+  if (!state.open) return null;
+  if (isAllDay(state.today)) return t('hours.open24lower');
+  if (state.closesAt === null) return null;
+  const m = zonedParts(state.closesAt).minutesOfDay;
+  return m === 0 ? t('hours.untilMidnight') : t('hours.until', { time: formatMinutesShort(m) });
+}
+
+/** "8:00 AM – 2:00 AM" / "Closed" */
+export function formatDayHours(h: DayHours | null): string {
+  if (!h) return t('hours.closed');
+  const o = hhmmToMinutes(h.open);
+  const c = hhmmToMinutes(h.close);
+  if (o === 0 && c === 1440) return t('hours.open24');
+  return `${formatMinutesShort(o)} – ${formatMinutesShort(c)}${c > 1440 ? ` ${t('hours.nextDay')}` : ''}`;
 }
 
 /** Group identical consecutive days: "Mon–Thu 8 AM – 2 AM · Fri 8 AM – 9 PM · …" */
 export function describeWeek(venue: Venue): { days: string; hours: string }[] {
-  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const names = Array.from({ length: 7 }, (_, i) => dayName(i));
   const order = [1, 2, 3, 4, 5, 6, 0];
   const out: { days: string; hours: string; first: number; last: number }[] = [];
   for (const d of order) {

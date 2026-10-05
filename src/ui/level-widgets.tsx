@@ -7,9 +7,10 @@ import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
 
 import { typicalPct, type TermPhase } from '@/domain/curve';
 import { hoursOn } from '@/domain/hours';
-import { LEVELS, confidenceText, levelText } from '@/domain/levels';
+import { LEVELS, confidenceText, levelBlurb, levelText } from '@/domain/levels';
 import { hhmmToMinutes, zonedParts } from '@/domain/time';
 import type { Level, LiveLevel, Venue } from '@/domain/types';
+import { t } from '@/i18n';
 
 import { colors, fonts, tabular, toneColor, type } from './theme';
 
@@ -18,31 +19,30 @@ export function levelTone(level: Level): 'green' | 'amber' | 'red' {
 }
 
 /** Five bars; filled = level + 1. A range lights the extra bars at half strength. */
-export function LevelBars({ level, levelHigh = level, size = 'md', muted = false }: { level: Level; levelHigh?: Level; size?: 'sm' | 'md' | 'lg'; muted?: boolean }) {
+export function LevelBars({ level, levelHigh = level, size = 'md', muted = false, faint = false }: { level: Level; levelHigh?: Level; size?: 'sm' | 'md' | 'lg'; muted?: boolean; /** Half strength: a level from the typical pattern with no live report. */ faint?: boolean }) {
   const w = size === 'lg' ? 10 : size === 'md' ? 7 : 5;
   const gap = size === 'lg' ? 4 : 3;
   const base = size === 'lg' ? 10 : size === 'md' ? 7 : 5;
   const step = size === 'lg' ? 5 : size === 'md' ? 3.5 : 2.5;
   const color = muted ? colors.ink4 : toneColor[levelTone(level)];
   return (
-    <View style={[styles.bars, { gap }]} accessibilityLabel={`${levelText({ level, levelHigh })}, ${level + 1} of 5 bars`} accessibilityRole="image">
+    <View style={[styles.bars, { gap }]} accessibilityLabel={t('level.bars', { level: levelText({ level, levelHigh }), n: level + 1 })} accessibilityRole="image">
       {[0, 1, 2, 3, 4].map((i) => {
         const on = i <= level;
         const range = !on && i <= levelHigh;
-        return <View key={i} style={{ width: w, height: base + i * step, borderRadius: 2, backgroundColor: on ? color : range ? color : colors.fill, opacity: range ? 0.35 : 1 }} />;
+        return <View key={i} style={{ width: w, height: base + i * step, borderRadius: 2, backgroundColor: on ? color : range ? color : colors.fill, opacity: range ? (faint ? 0.2 : 0.35) : on && faint ? 0.45 : 1 }} />;
       })}
     </View>
   );
 }
 
 /** Inline "Filling · 2 reports, 6 min ago" with bars. */
-export function LevelLine({ live, now, muted }: { live: LiveLevel; now: number; muted?: boolean }) {
+export function LevelLine({ live, now, muted, compact }: { live: LiveLevel; now: number; muted?: boolean; /** List rows: shorten the no-report case to "typical pattern". */ compact?: boolean }) {
+  const text = !live.open ? t('level.closedNow') : compact && live.confidence === 'none' ? t('level.typicalShort', { level: levelText(live) }) : `${levelText(live)} · ${confidenceText(live, now)}`;
   return (
     <View style={styles.line}>
-      <LevelBars level={live.level} levelHigh={live.levelHigh} size="sm" muted={muted || !live.open} />
-      <Text style={[type.footnote, !live.open && { color: colors.ink2 }]} numberOfLines={1}>
-        {live.open ? `${levelText(live)} · ${confidenceText(live, now)}` : 'Closed now'}
-      </Text>
+      <LevelBars level={live.level} levelHigh={live.levelHigh} size="sm" muted={muted || !live.open} faint={live.open && live.confidence === 'none'} />
+      <Text style={[type.footnote, { flex: 1 }]}>{text}</Text>
     </View>
   );
 }
@@ -52,17 +52,17 @@ export function LevelHero({ live, now, isDemo }: { live: LiveLevel; now: number;
   const tone = levelTone(live.level);
   return (
     <View accessibilityLiveRegion="polite">
-      <Text style={type.subheadline}>Right now</Text>
+      <Text style={type.subheadline}>{t('spot.rightNow')}</Text>
       <View style={styles.heroRow}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.heroLabel, { color: live.open ? toneColor[tone] : colors.ink2 }]}>
-          {live.open ? levelText(live) : 'Closed'}
+          {live.open ? levelText(live) : t('spot.closed')}
         </Text>
-        <LevelBars level={live.level} levelHigh={live.levelHigh} size="lg" muted={!live.open} />
+        <LevelBars level={live.level} levelHigh={live.levelHigh} size="lg" muted={!live.open} faint={live.open && live.confidence === 'none'} />
       </View>
-      <Text style={type.subheadline}>{live.open ? LEVELS[live.level].blurb : 'Hours and the typical pattern are still shown below.'}</Text>
+      <Text style={type.subheadline}>{live.open ? levelBlurb(live.level) : t('spot.closedBlurb')}</Text>
       <Text style={[type.footnote, { marginTop: 6 }]}>
         {confidenceText(live, now)}
-        {isDemo && live.open ? ' · demo' : ''}
+        {isDemo && live.open ? ` · ${t('common.demo')}` : ''}
       </Text>
     </View>
   );
@@ -88,7 +88,7 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }
   const arrivalHour = arrivalAt ? zonedParts(arrivalAt).hour + zonedParts(arrivalAt).minute / 60 : null;
   const nowX = padL + (p.minutesOfDay / 60) * bw;
   return (
-    <View accessibilityLabel={`Typical day for ${venue.shortName}`} accessibilityRole="image">
+    <View accessibilityLabel={t('widgets.typicalDayA11y', { spot: venue.shortName })} accessibilityRole="image">
       <Svg width={width} height={height}>
         {bars.map((b) => {
           const hgt = Math.max(b.isOpen ? 2 : 0, b.pct * barH);
@@ -98,15 +98,15 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }
         <Line x1={nowX} x2={nowX} y1={2} y2={barH + 6} stroke={colors.ink} strokeWidth={1.5} />
         {arrivalHour !== null && arrivalHour >= 0 && arrivalHour < 24 ? <Line x1={padL + arrivalHour * bw} x2={padL + arrivalHour * bw} y1={2} y2={barH + 6} stroke={colors.tint} strokeWidth={1.5} strokeDasharray="3 3" /> : null}
         {[0, 6, 12, 18].map((h) => (
-          <SvgText key={h} x={padL + h * bw + 1} y={height - 3} fontSize={10} fill={colors.ink2} fontFamily={fonts.sans}>
+          <SvgText key={h} x={padL + h * bw + 1} y={height - 3} fontSize={type.chartAxis.fontSize} fill={colors.ink2} fontFamily={fonts.sans}>
             {h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`}
           </SvgText>
         ))}
       </Svg>
       <View style={styles.legend}>
-        <Text style={type.caption}>▍ now</Text>
-        {arrivalHour !== null ? <Text style={[type.caption, { color: colors.tint }]}>┆ your arrival</Text> : null}
-        <Text style={type.caption}>grey = closed</Text>
+        <Text style={type.caption}>{t('widgets.legendNow')}</Text>
+        {arrivalHour !== null ? <Text style={[type.caption, { color: colors.tint }]}>{t('widgets.legendArrival')}</Text> : null}
+        <Text style={type.caption}>{t('widgets.legendClosed')}</Text>
       </View>
     </View>
   );
@@ -119,14 +119,14 @@ export function HourBars({ values, width, height = 72, highlightStart }: { value
   const bw = width / 24;
   const barH = height - padB - 2;
   return (
-    <Svg width={width} height={height} accessibilityLabel="Focus time by hour of day">
+    <Svg width={width} height={height} accessibilityLabel={t('profile.hourChartA11y')}>
       {values.map((v, h) => {
         const hgt = Math.max(v > 0 ? 2 : 0, (v / max) * barH);
         const hi = highlightStart !== null && highlightStart !== undefined && (h === highlightStart || h === (highlightStart + 1) % 24);
         return <Rect key={h} x={h * bw + 1} y={2 + barH - hgt} width={bw - 2} height={hgt} rx={1.5} fill={hi ? colors.green : colors.tint} opacity={v > 0 ? (hi ? 1 : 0.6) : 1} />;
       })}
       {[0, 6, 12, 18].map((h) => (
-        <SvgText key={h} x={h * bw + 1} y={height - 2} fontSize={10} fill={colors.ink2} fontFamily={fonts.sans}>
+        <SvgText key={h} x={h * bw + 1} y={height - 2} fontSize={type.chartAxis.fontSize} fill={colors.ink2} fontFamily={fonts.sans}>
           {h === 0 ? '12a' : h === 12 ? '12p' : h < 12 ? `${h}a` : `${h - 12}p`}
         </SvgText>
       ))}
@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
   bars: { flexDirection: 'row', alignItems: 'flex-end' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 },
   heroRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 2, marginBottom: 4 },
-  heroLabel: { ...type.largeTitle, fontSize: 34, lineHeight: 40, ...tabular },
+  heroLabel: { ...type.display, ...tabular },
   legend: { flexDirection: 'row', gap: 12, marginTop: 2 },
 });

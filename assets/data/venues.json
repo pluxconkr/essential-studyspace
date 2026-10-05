@@ -1,5 +1,5 @@
 {
- "version": "2026.10.03",
+ "version": "2026.10.04",
  "note": "Hours were read from each institution's published hours (LibCal pages for Rutgers, NJIT and Stevens; library websites for public libraries; a public listing for the café) on 3 October 2026 and are for the regular fall term. Seat counts are null wherever the venue does not publish one — levels are relative, so the app never needs them. Typical-day curves are per-kind estimates labelled as such. No venue is a partner; no endorsement is implied.",
  "venues": [
   {
@@ -141,7 +141,7 @@
    "curveSource": "estimate",
    "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/carr-library",
    "phone": "848-445-3613",
-   "notes": "Formerly Kilmer Area Library (1971); named for James Dickson Carr, Rutgers' first African American graduate, by the Board of Governors on 8 Feb 2017. Reached from College Ave by the campus bus, not on foot — walk minutes shown are from the Livingston campus edge and will be optimistic.",
+   "notes": "Formerly Kilmer Library; named for James Dickson Carr, Rutgers' first African American graduate, in 2017. Reached from College Ave by campus bus; walking minutes shown are from the Livingston campus edge.",
    "hoursVerified": "2026-10-03",
    "lastVerified": "2026-10-03",
    "venueId": "carr-library",
@@ -476,6 +476,154 @@
     "new-brunswick"
    ],
    "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page); coordinates OSM/Nominatim"
+  },
+  {
+   "venueId": "chang-library",
+   "name": "Stephen and Lucy Chang Science Library",
+   "shortName": "Chang Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "Cook",
+   "address": "59 Dudley Rd, New Brunswick, NJ 08901",
+   "town": "New Brunswick",
+   "lat": 40.48054,
+   "lng": -74.43527,
+   "coordConfidence": "high",
+   "hours": [
+    null,
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    null
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "hoursVerified": "2026-10-03",
+   "exceptions": [],
+   "access": "public",
+   "capacity": null,
+   "zones": [
+    {
+     "zoneId": "chang-rr",
+     "name": "Reading room",
+     "floor": "1",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Small science branch in Foran Hall; no published zone policy.",
+     "source": "Rutgers Libraries locations page"
+    }
+   ],
+   "amenities": [
+    "wifi-eduroam",
+    "computers",
+    "printing",
+    "solo-desks"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/chang-library",
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page); coordinates OSM/Nominatim (Foran Hall)",
+   "lastVerified": "2026-10-03"
+  },
+  {
+   "venueId": "math-physics-library",
+   "name": "Mathematical Sciences and Physics Library",
+   "shortName": "Math & Physics Library",
+   "kind": "library",
+   "area": "new-brunswick",
+   "campus": "Busch",
+   "address": "110 Frelinghuysen Rd, Piscataway, NJ 08854",
+   "town": "Piscataway",
+   "lat": 40.52189,
+   "lng": -74.46284,
+   "coordConfidence": "high",
+   "hours": [
+    null,
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    {
+     "open": "09:00",
+     "close": "17:00"
+    },
+    null
+   ],
+   "hoursSource": "Rutgers University Libraries hours (libcal.rutgers.edu/hours), week of 28 Sep 2026",
+   "hoursVerified": "2026-10-03",
+   "exceptions": [],
+   "access": "public",
+   "capacity": null,
+   "zones": [
+    {
+     "zoneId": "mp-rr",
+     "name": "Reading room",
+     "floor": "1",
+     "noise": "low",
+     "seats": null,
+     "outlets": null,
+     "note": "Small branch in the Hill Center; no published zone policy.",
+     "source": "Rutgers Libraries locations page"
+    }
+   ],
+   "amenities": [
+    "wifi-eduroam",
+    "computers",
+    "printing",
+    "solo-desks"
+   ],
+   "accessibility": {
+    "stepFree": null,
+    "accessibleRestroom": null,
+    "adjustableDesks": null,
+    "note": "Not confirmed against a facilities audit. Call ahead if you need step-free access."
+   },
+   "typicalCurve": null,
+   "curveSource": "estimate",
+   "stationIds": [
+    "new-brunswick"
+   ],
+   "website": "https://www.libraries.rutgers.edu/new-brunswick/visit-study/locations/math-physics-library",
+   "verifiedBy": "Rutgers University Libraries (LibCal hours, locations page); coordinates OSM/Nominatim (Hill Center)",
+   "lastVerified": "2026-10-03"
   },
   {
    "coordConfidence": "high",

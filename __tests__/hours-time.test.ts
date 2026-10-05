@@ -57,6 +57,7 @@ describe('New Jersey time (America/New_York)', () => {
     expect(formatIn(130 * 60_000)).toBe('in 2 h 10 min');
     expect(formatDuration(14 * 3600 + 20 * 60)).toBe('14h 20m');
     expect(formatDuration(45 * 60)).toBe('45m');
+    expect(formatDuration(2 * 3600 - 1)).toBe('2h 00m'); // never "1h 60m"
     expect(formatMMSS(24 * 60_000 + 59_000)).toBe('24:59');
     const now = Date.parse('2026-10-03T18:00:00Z');
     expect(relativeAgo(now - 30_000, now)).toBe('just now');

@@ -6,7 +6,8 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { watchRepo } from '@/data/repos';
-import { LEVEL_LABEL } from '@/domain/levels';
+import { levelLabel } from '@/domain/levels';
+import { t, tn } from '@/i18n';
 import { remainingBoundaries } from '@/domain/timer';
 import type { LiveLevel, Session, Venue } from '@/domain/types';
 import { getState } from '@/store/appStore';
@@ -65,7 +66,7 @@ export async function notifyWatchHits(hits: { venue: Venue; live: LiveLevel }[],
   for (const h of fresh) {
     try {
       await Notifications.scheduleNotificationAsync({
-        content: { title: `${h.venue.shortName} is ${LEVEL_LABEL[h.live.level]}`, body: `${h.live.reports} recent report${h.live.reports === 1 ? '' : 's'} · tap to see the spot`, data: { venueId: h.venue.venueId } },
+        content: { title: t('notif.watchTitle', { spot: h.venue.shortName, level: levelLabel(h.live.level) }), body: tn(h.live.reports, 'notif.watchBody'), data: { venueId: h.venue.venueId } },
         trigger: Platform.OS === 'android' ? { channelId: CHANNEL_ID } : null,
       });
     } catch {
@@ -99,8 +100,8 @@ export async function scheduleSessionNotifications(session: Session, now: number
   await configureNotifications();
   if (!(await ensurePermission())) return;
   for (const b of boundaries) {
-    const title = b.last ? 'Session complete' : b.kind === 'focus' ? `Block ${b.blockNo} of ${b.blocks} done` : `Break over`;
-    const body = b.last ? 'Nice work. Log how it went.' : b.kind === 'focus' ? 'Take your break. Chat opens now.' : `Back to it — block ${b.blockNo + 1} of ${b.blocks}.`;
+    const title = b.last ? t('notif.sessionDone') : b.kind === 'focus' ? t('notif.blockDone', { n: b.blockNo, total: b.blocks }) : t('notif.breakOver');
+    const body = b.last ? t('notif.sessionDoneBody') : b.kind === 'focus' ? t('notif.blockDoneBody') : t('notif.breakOverBody', { n: b.blockNo + 1, total: b.blocks });
     try {
       const id = await Notifications.scheduleNotificationAsync({
         content: { title, body, data: { session: session.sessionId } },
