@@ -111,14 +111,10 @@ export interface RankResult {
 
 /** Rank every venue in the area: open ones by score, closed ones by next opening. */
 export function rankVenues(venues: readonly Venue[], levels: Record<string, LiveLevel>, ctx: RankContext): RankResult {
-  const rows = venues.filter((v) => v.area === ctx.prefs.area).map((v) => rankVenue(v, levels[v.venueId] ?? fallbackLevel(v), ctx));
+  const rows = venues.filter((v) => v.area === ctx.prefs.area).map((v) => rankVenue(v, levels[v.venueId], ctx));
   const open = rows.filter((r) => r.arrival.open).sort((a, b) => b.score - a.score || a.walkMin - b.walkMin);
   const closed = rows.filter((r) => !r.arrival.open).sort((a, b) => (a.state.opensAt ?? Infinity) - (b.state.opensAt ?? Infinity));
   return { open, closed };
-}
-
-function fallbackLevel(v: Venue): LiveLevel {
-  return { venueId: v.venueId, level: 1, levelHigh: 2, pct: 0.3, confidence: 'none', reports: 0, fresh: 0, newestAt: null, prior: v.curveSource, open: true };
 }
 
 /** Human-readable breakdown rows for the "Why this ranking?" screen. */

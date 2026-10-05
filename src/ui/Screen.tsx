@@ -6,7 +6,7 @@
  */
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { relativeAgo } from '@/domain/time';
@@ -18,12 +18,10 @@ import { Icon } from './icons';
 import { GUTTER, MIN_TAP, colors, type } from './theme';
 
 type Router = ReturnType<typeof useRouter>;
-export type Fallback = '/' | '/map' | '/focus';
-
-/** Go back if there is history; otherwise replace with a sensible fallback (deep links, tests). */
-export function goBackOr(router: Router, fallback: Fallback = '/') {
+/** Go back if there is history; otherwise go home (deep links, tests). */
+export function goBackOr(router: Router) {
   if (router.canGoBack()) router.back();
-  else router.replace(fallback);
+  else router.replace('/');
 }
 
 export function OfflineBanner() {
@@ -45,19 +43,17 @@ export function OfflineBanner() {
 export function StatusLine() {
   const offline = useAppState((s) => isOfflineNow(s));
   const checked = useAppState((s) => s.cacheMeta.crowd?.fetchedAt ?? null);
-  const configured = useAppState((s) => s.crowd?.configured ?? true);
   const refreshing = useAppState((s) => s.refreshing);
   const realNow = useRealNow();
-  void configured;
   const text = refreshing ? t('status.checking') : offline ? t('status.offline') : checked ? t('status.checked', { ago: relativeAgo(checked, realNow) }) : t('status.notYet');
   return <Text style={styles.status}>{text}</Text>;
 }
 
-export function BackHeader({ title, right, fallback = '/' }: { title: string; right?: ReactNode; fallback?: Fallback }) {
+export function BackHeader({ title, right }: { title: string; right?: ReactNode }) {
   const router = useRouter();
   return (
     <View style={styles.navBar}>
-      <Pressable onPress={() => goBackOr(router, fallback)} accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8} style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}>
+      <Pressable onPress={() => goBackOr(router)} accessibilityRole="button" accessibilityLabel={t('common.back')} hitSlop={8} style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.5 }]}>
         <Icon name="back" size={22} color={colors.tint} weight="semibold" />
         <Text maxFontSizeMultiplier={1.3} style={styles.backText}>{t('common.back')}</Text>
       </Pressable>
@@ -76,13 +72,7 @@ export function Screen({
   subtitle,
   note,
   status,
-  header,
-  headerRight,
-  contentStyle,
-  padded = true,
-  scroll = true,
   testID,
-  fallback,
   onRefresh,
   refreshing = false,
 }: {
@@ -96,14 +86,7 @@ export function Screen({
   note?: string;
   /** Show the live-level status line under the large title. */
   status?: boolean;
-  /** Full-bleed element rendered above the body. */
-  header?: ReactNode;
-  headerRight?: ReactNode;
-  contentStyle?: StyleProp<ViewStyle>;
-  padded?: boolean;
-  scroll?: boolean;
   testID?: string;
-  fallback?: Fallback;
   /** Pull-to-refresh handler (tab screens). */
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -119,32 +102,22 @@ export function Screen({
         {note ? <Text style={styles.status}>{note}</Text> : null}
         {status ? <StatusLine /> : null}
       </View>
-      {headerRight ? <View style={{ paddingBottom: 6 }}>{headerRight}</View> : null}
     </View>
   ) : null;
-  const body = <View style={[padded && styles.padded, contentStyle]}>{children}</View>;
+  const body = <View style={styles.padded}>{children}</View>;
   return (
     <View style={[styles.root, { paddingTop: insets.top }]} testID={testID}>
       <OfflineBanner />
-      {title ? <BackHeader title={largeTitle === title ? '' : title} fallback={fallback} /> : null}
-      {scroll ? (
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
-          keyboardShouldPersistTaps="handled"
-          contentInsetAdjustmentBehavior="never"
-          refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink2} /> : undefined}>
-          {header}
-          {pageHeader}
-          {body}
-        </ScrollView>
-      ) : (
-        <View style={styles.scroll}>
-          {header}
-          {pageHeader}
-          {body}
-        </View>
-      )}
+      {title ? <BackHeader title={largeTitle === title ? '' : title} /> : null}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="never"
+        refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink2} /> : undefined}>
+        {pageHeader}
+        {body}
+      </ScrollView>
     </View>
   );
 }

@@ -8,13 +8,13 @@ import { AREA_BBOX, AREA_DEFAULT_STATION, AREA_NAME } from '@/domain/areas';
 import { currentOrNextGap, type ActiveGap } from '@/domain/blocks';
 import type { TermPhase } from '@/domain/curve';
 import { inBBox } from '@/domain/geo';
-import { dedupeReports, fuse, proofStrength } from '@/domain/levels';
+import { dedupeReports, fuse, toReport } from '@/domain/levels';
 import { rankVenues, type RankContext, type RankResult } from '@/domain/ranking';
 import { nowMs } from '@/domain/time';
 import { blockAt, type BlockState } from '@/domain/timer';
 import { bestWindow, focusByHour, focusByVenue, streakDays, weekSummary } from '@/domain/focus';
 import { stationById } from '@/domain/transit';
-import type { CheckIn, CrowdReport, LiveLevel, Session, Venue } from '@/domain/types';
+import type { CheckIn, CrowdReport, CrowdSnapshot, LiveLevel, Session, Venue } from '@/domain/types';
 import { t } from '@/i18n';
 
 import { useAppState } from './appStore';
@@ -69,9 +69,13 @@ export function useVenue(id: string | undefined): Venue | null {
 function ownReports(checkIns: readonly CheckIn[]): Record<string, CrowdReport[]> {
   const out: Record<string, CrowdReport[]> = {};
   for (const c of checkIns) {
-    (out[c.venueId] ??= []).push({ venueId: c.venueId, zoneId: c.zoneId, level: c.level, at: c.at, weight: proofStrength(c.proof.distanceM, c.proof.gpsAccuracyM), noise: c.noise, amenities: c.amenities });
+    (out[c.venueId] ??= []).push(toReport(c));
   }
   return out;
+}
+
+function reportsFor(venueId: string, mine: Record<string, CrowdReport[]>, crowd: CrowdSnapshot | null, demo: Record<string, CrowdReport[]>): CrowdReport[] {
+  return dedupeReports(mine[venueId] ?? [], [...(crowd?.reports[venueId] ?? []), ...(demo[venueId] ?? [])]);
 }
 
 /** Every report that counts for one venue: own check-ins, the relay (minus echoes of our own), and demo reports. */
@@ -79,7 +83,7 @@ export function useVenueReports(venueId: string): CrowdReport[] {
   const my = useAppState((s) => s.myCheckIns);
   const crowd = useAppState((s) => s.crowd);
   const demo = useAppState((s) => s.demoReports);
-  return useMemo(() => dedupeReports(ownReports(my.filter((c) => c.venueId === venueId))[venueId] ?? [], [...(crowd?.reports[venueId] ?? []), ...(demo[venueId] ?? [])]), [my, crowd, demo, venueId]);
+  return useMemo(() => reportsFor(venueId, ownReports(my.filter((c) => c.venueId === venueId)), crowd, demo), [my, crowd, demo, venueId]);
 }
 
 /** Fused level for every venue: own check-ins + relay snapshot + demo reports + the typical-pattern prior. */
@@ -94,7 +98,7 @@ export function useLiveLevels(): Record<string, LiveLevel> {
     const mine = ownReports(my);
     const out: Record<string, LiveLevel> = {};
     for (const v of venues) {
-      const reports = dedupeReports(mine[v.venueId] ?? [], [...(crowd?.reports[v.venueId] ?? []), ...(demo[v.venueId] ?? [])]);
+      const reports = reportsFor(v.venueId, mine, crowd, demo);
       out[v.venueId] = fuse({ venue: v, reports, now, phase });
     }
     return out;

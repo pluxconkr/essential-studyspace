@@ -181,7 +181,11 @@ export async function POST(request: Request): Promise<Response> {
   if (now - t > RETENTION_MS || t > now + 5 * 60_000) return Response.json({ error: 'stale' }, { status: 422 });
   const r: StoredReport = { zoneId: body.zoneId ?? null, level: body.level, at: roundToMinute(body.at), weight: Math.min(1, Math.max(0.4, body.weight ?? 0.4)), noise: body.noise ?? null, amenities: body.amenities ?? [] };
   try {
-    await getStore().push(body.venueId, r);
+    // A phone that lost the response re-sends the same body; keep it once.
+    const s = getStore();
+    const key = JSON.stringify(r);
+    if ((await s.list(body.venueId)).some((h) => JSON.stringify(h) === key)) return Response.json({ ok: true, kept: r });
+    await s.push(body.venueId, r);
   } catch {
     return Response.json({ error: 'store-unavailable' }, { status: 503 });
   }

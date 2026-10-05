@@ -12,7 +12,7 @@ import type { TermPhase } from './curve';
 import { typicalPct } from './curve';
 import { isOpenAt } from './hours';
 import { isWeekend, toEpoch } from './time';
-import type { Amenity, Confidence, CrowdReport, Level, LiveLevel, NoiseReport, Venue } from './types';
+import type { Amenity, CheckIn, Confidence, CrowdReport, Level, LiveLevel, NoiseReport, Venue } from './types';
 
 export interface LevelMeta {
   level: Level;
@@ -84,6 +84,11 @@ export function proofStrength(distanceM: number | null, gpsAccuracyM: number | n
   return 0.4;
 }
 
+/** The anonymous part of a check-in, with the weight the relay will store. */
+export function toReport(c: CheckIn): CrowdReport {
+  return { venueId: c.venueId, zoneId: c.zoneId, level: c.level, at: c.at, weight: proofStrength(c.proof.distanceM, c.proof.gpsAccuracyM), noise: c.noise, amenities: c.amenities };
+}
+
 export function recencyDecay(ageMin: number, weekend: boolean): number {
   const hl = weekend ? FUSION.halfLifeWeekendMin : FUSION.halfLifeWeekdayMin;
   return Math.pow(0.5, Math.max(0, ageMin) / hl);
@@ -145,8 +150,7 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
   // Range: one level when confident; the spread of recent reports when they disagree;
   // the prior's natural uncertainty (±20%) when nothing live exists.
   let levelHigh: Level = level;
-  if (confidence === 'high') levelHigh = level;
-  else if (confidence === 'medium' && recent.length >= 2 && spread(recent) > 1) {
+  if (confidence === 'medium' && recent.length >= 2 && spread(recent) > 1) {
     const hi = Math.max(...levelsOf(recent)) as Level;
     levelHigh = hi > level ? hi : level;
   } else if (confidence === 'low' || confidence === 'none') {

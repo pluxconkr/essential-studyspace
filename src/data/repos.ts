@@ -74,11 +74,7 @@ export function dropLowPriority(): DroppedItem[] {
   const dropped: DroppedItem[] = [];
   if (kv.get<CrowdSnapshot>(KEYS.crowd) != null) {
     kv.remove(KEYS.crowd);
-    kv.update<CacheMetaMap>(KEYS.cacheMeta, (prev) => {
-      const next = { ...(prev ?? {}) };
-      delete next.crowd;
-      return next;
-    });
+    cacheMetaRepo.remove('crowd');
     dropped.push('crowd-cache');
   }
   const cis = kv.get<CheckIn[]>(KEYS.checkins) ?? [];
@@ -297,9 +293,6 @@ export const focusLogRepo = {
   },
   add(e: FocusEntry): FocusEntry[] {
     return guardedUpdate<FocusEntry[]>(KEYS.focusLog, (prev) => [e, ...(prev ?? []).filter((x) => x.sessionId !== e.sessionId)].slice(0, FOCUS_LOG_MAX));
-  },
-  replaceAll(list: FocusEntry[]): FocusEntry[] {
-    return guardedSet(KEYS.focusLog, list.slice(0, FOCUS_LOG_MAX));
   },
 };
 

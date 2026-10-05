@@ -56,8 +56,8 @@ export function AreaMap({
       if (!cur || len > cur.len) best.set(r.name, { pts: r.pts, len });
     }
     const out: { name: string; x: number; y: number }[] = [];
-    for (const [name, { pts }] of best) {
-      const mid = pts[Math.floor(pts.length / 2)];
+    for (const [name, b] of best) {
+      const mid = b.pts[Math.floor(b.pts.length / 2)];
       const p = proj.toXY({ lng: mid[0], lat: mid[1] });
       if (p.x < 30 || p.x > width - 30 || p.y < 14 || p.y > height - 14) continue;
       if (pins.some((pin) => Math.hypot(pin.x - p.x, pin.y - p.y) < 26)) continue;

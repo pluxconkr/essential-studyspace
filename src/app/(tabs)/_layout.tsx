@@ -22,7 +22,6 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.label,
         // Like UIKit tab bars: labels stay put at large text sizes; everything above the bar scales.
         tabBarAllowFontScaling: false,
-        lazy: false,
         sceneStyle: { backgroundColor: colors.bg },
       }}>
       <Tabs.Screen name="index" options={{ title: t('tab.now'), tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'now' : 'nowOutline'} color={String(color)} /> }} />

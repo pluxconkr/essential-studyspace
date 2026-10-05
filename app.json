@@ -10,15 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "supportsTablet": false,
-      "bundleIdentifier": "com.27363.studyspace",
-      "infoPlist": {
-        "UIBackgroundModes": [
-          "processing"
-        ],
-        "BGTaskSchedulerPermittedIdentifiers": [
-          "com.expo.modules.backgroundtask.processing"
-        ]
-      }
+      "bundleIdentifier": "com.27363.studyspace"
     },
     "android": {
       "adaptiveIcon": {

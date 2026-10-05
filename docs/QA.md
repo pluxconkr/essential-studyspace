@@ -38,6 +38,6 @@ Preparation: install a development build (or Expo Go), open the app once online 
 
 ## Deep links
 
-`studyspace://?demo=finals` (also `quiet`, `late`, `live`) · `studyspace://map?area=newark` (also `new-brunswick`, `hoboken`, `princeton`) · `studyspace://spot/alexander-library` · `studyspace://checkin/carr-library`.
+`studyspace://?demo=finals` (also `quiet`, `late`, `live`; development builds only) · `studyspace://map?area=newark` (also `new-brunswick`, `hoboken`, `princeton`) · `studyspace://spot/alexander-library` · `studyspace://checkin/carr-library`.
 
 On the iOS Simulator with Metro running: `xcrun simctl openurl booted "exp://127.0.0.1:8081/--/map?area=hoboken"`.

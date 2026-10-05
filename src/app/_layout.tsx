@@ -36,7 +36,7 @@ const theme = {
 
 export default function RootLayout() {
   const onboarded = useAppState((s) => s.onboarded);
-  // Text that is already mounted keeps its old measurements when the user changes text size; remounting fixes it.
+  // Text that is already mounted keeps its old measurements when the user changes text size (verified on the simulator: Fabric does not re-measure it); remounting fixes it.
   const { fontScale } = useWindowDimensions();
   const booted = useRef(false);
 

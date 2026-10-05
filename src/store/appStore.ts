@@ -105,9 +105,8 @@ function emit() {
   for (const l of listeners) l();
 }
 
-export function setState(patch: Partial<AppState> | ((prev: AppState) => Partial<AppState>)) {
-  const p = typeof patch === 'function' ? patch(state) : patch;
-  state = { ...state, ...p };
+export function setState(patch: Partial<AppState>) {
+  state = { ...state, ...patch };
   emit();
 }
 
@@ -156,10 +155,6 @@ export function useAppState<T>(selector: (s: AppState) => T): T {
   return useSyncExternalStore(subscribe, () => selector(state), () => selector(state));
 }
 
-export function useAppStore(): AppState {
-  return useSyncExternalStore(subscribe, getState, getState);
-}
-
 // ---------- Actions (local-first) ----------
 
 export const actions = {
@@ -168,10 +163,6 @@ export const actions = {
     if (opts.finishOnboarding) prefsRepo.setOnboarded(true);
     setState({ prefs: clean, onboarded: opts.finishOnboarding ? true : state.onboarded });
     return clean;
-  },
-  skipOnboarding() {
-    prefsRepo.setOnboarded(true);
-    setState({ onboarded: true });
   },
   addCheckIn(ci: CheckIn) {
     setState({ myCheckIns: checkInRepo.add(ci, nowMs()) });
@@ -215,9 +206,6 @@ export const actions = {
     sessionRepo.set(null);
     setState({ session: null });
   },
-  setFocusLog(log: FocusEntry[]) {
-    setState({ focusLog: focusLogRepo.replaceAll(log) });
-  },
   toggleWatch(venueId: string, notifyAtOrBelow: Level = 1) {
     const has = state.watches.some((w) => w.venueId === venueId);
     const next = has ? state.watches.filter((w) => w.venueId !== venueId) : [...state.watches, { venueId, notifyAtOrBelow, createdAt: nowIso() }];
@@ -248,9 +236,6 @@ export const actions = {
   dismissStorageNotice() {
     storageNoticeRepo.clear();
     setState({ storageNotice: null });
-  },
-  rehydrate() {
-    hydrate();
   },
 };
 

@@ -1,5 +1,5 @@
 /**
- * Geometry helpers: great-circle distance, bearings, and an equirectangular projection used by
+ * Geometry helpers: great-circle distance and an equirectangular projection used by
  * the offline SVG area maps. Pure functions.
  */
 import type { BBox } from './areas';
@@ -71,20 +71,4 @@ export function lineToPath(line: readonly (readonly [number, number])[], proj: P
     d += `${i === 0 ? 'M' : 'L'}${f(x)} ${f(y)}`;
   }
   return d;
-}
-
-/** Compass bearing from a to b in degrees (0 = north). */
-export function bearingDeg(a: LatLng, b: LatLng): number {
-  const la1 = toRad(a.lat);
-  const la2 = toRad(b.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const y = Math.sin(dLng) * Math.cos(la2);
-  const x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng);
-  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-}
-
-const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-
-export function compassLabel(bearing: number): string {
-  return COMPASS[Math.round(bearing / 45) % 8];
 }

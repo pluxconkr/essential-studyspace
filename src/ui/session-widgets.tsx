@@ -16,11 +16,11 @@ import { MIN_TAP, colors, tabular, type } from './theme';
 export function TimerRing({ block, size = 220 }: { block: BlockState; size?: number }) {
   const pct = block.totalMs && block.remainingMs !== null ? ((block.totalMs - block.remainingMs) / block.totalMs) * 100 : 0;
   const color = block.kind === 'break' ? colors.green : colors.tint;
-  const label = block.kind === 'done' ? t('timer.done') : block.remainingMs === null ? t('timer.freeLabel') : formatMMSS(block.remainingMs);
+  const label = block.kind === 'done' ? t('common.done') : block.remainingMs === null ? t('timer.freeLabel') : formatMMSS(block.remainingMs);
   const sub = block.kind === 'done' ? t('timer.allDone') : block.kind === 'break' ? t('timer.breakBlock', { n: block.blockNo, total: block.blocks }) : block.remainingMs === null ? t('timer.openEnded') : t('timer.focusBlock', { n: block.blockNo, total: block.blocks });
   return (
     <View style={{ alignItems: 'center' }} accessibilityLiveRegion="polite">
-      <ProgressRing pct={block.remainingMs === null ? 100 : pct} size={size} stroke={10} color={block.paused ? colors.ink4 : color} track={colors.fill}>
+      <ProgressRing pct={block.remainingMs === null ? 100 : pct} size={size} stroke={10} color={block.paused ? colors.ink4 : color}>
         <View style={{ alignItems: 'center' }}>
           <Text maxFontSizeMultiplier={1.1} adjustsFontSizeToFit numberOfLines={1} style={[styles.numerals, tabular, block.paused && { color: colors.ink2 }]} accessibilityLabel={`${label} ${block.paused ? t('timer.paused') : t('timer.remaining')}`}>
             {label}

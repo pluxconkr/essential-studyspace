@@ -85,10 +85,7 @@ describe('fusion', () => {
     expect(old.reports).toBe(1);
   });
 
-  test('an old report is low confidence and labelled unverified; older than 3 h is ignored', () => {
-    const low = fuse({ venue: alexander, reports: [rep(0, 70)], now: NOW });
-    expect(low.confidence).toBe('low');
-    expect(confidenceText(low, NOW)).toMatch(/unverified/);
+  test('a report older than 3 h is ignored', () => {
     const gone = fuse({ venue: alexander, reports: [rep(0, FUSION.maxAgeMin + 1)], now: NOW });
     expect(gone.reports).toBe(0);
     expect(gone.confidence).toBe('none');

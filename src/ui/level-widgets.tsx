@@ -37,11 +37,11 @@ export function LevelBars({ level, levelHigh = level, size = 'md', muted = false
 }
 
 /** Inline "Filling · 2 reports, 6 min ago" with bars. */
-export function LevelLine({ live, now, muted, compact }: { live: LiveLevel; now: number; muted?: boolean; /** List rows: shorten the no-report case to "typical pattern". */ compact?: boolean }) {
+export function LevelLine({ live, now, compact }: { live: LiveLevel; now: number; /** List rows: shorten the no-report case to "typical pattern". */ compact?: boolean }) {
   const text = !live.open ? t('level.closedNow') : compact && live.confidence === 'none' ? t('level.typicalShort', { level: levelText(live) }) : `${levelText(live)} · ${confidenceText(live, now)}`;
   return (
     <View style={styles.line}>
-      <LevelBars level={live.level} levelHigh={live.levelHigh} size="sm" muted={muted || !live.open} faint={live.open && live.confidence === 'none'} />
+      <LevelBars level={live.level} levelHigh={live.levelHigh} size="sm" muted={!live.open} faint={live.open && live.confidence === 'none'} />
       <Text style={[type.footnote, { flex: 1 }]}>{text}</Text>
     </View>
   );
@@ -55,7 +55,7 @@ export function LevelHero({ live, now, isDemo }: { live: LiveLevel; now: number;
       <Text style={type.subheadline}>{t('spot.rightNow')}</Text>
       <View style={styles.heroRow}>
         <Text maxFontSizeMultiplier={1.2} style={[styles.heroLabel, { color: live.open ? toneColor[tone] : colors.ink2 }]}>
-          {live.open ? levelText(live) : t('spot.closed')}
+          {live.open ? levelText(live) : t('hours.closed')}
         </Text>
         <LevelBars level={live.level} levelHigh={live.levelHigh} size="lg" muted={!live.open} faint={live.open && live.confidence === 'none'} />
       </View>

@@ -31,9 +31,9 @@ export default function WhyScreen() {
 
   if (!venue || !row) {
     return (
-      <Screen title={t('why.nav')} fallback="/">
+      <Screen title={t('why.nav')}>
         <Callout icon="question" title={t('why.notRanked')} />
-        <Button title={t('common.close')} style={{ marginTop: 12 }} onPress={() => goBackOr(router, '/')} />
+        <Button title={t('common.close')} style={{ marginTop: 12 }} onPress={() => goBackOr(router)} />
       </Screen>
     );
   }
@@ -44,10 +44,10 @@ export default function WhyScreen() {
   const lvl = levelText(row.arrival);
   const seatsLine = !row.arrival.open ? t('why.closedWhenArrive') : row.parts.seats >= 0.6 ? t('why.seatsLikely', { level: lvl }) : row.parts.seats >= 0.35 ? t('why.someSeats', { level: lvl }) : t('why.fewSeats', { level: lvl });
   const until = untilLabel(row.state);
-  const stayLine = row.stayMin === null ? t('why.closedOnArrival') : until === t('hours.open24lower') ? t('why.open24') : until ? `${t('why.openUntil', { until })}${row.stayMin < 90 ? t('why.onlyMin', { n: row.stayMin }) : ''}` : t('why.open');
+  const stayLine = row.stayMin === null ? t('why.closedOnArrival') : until === t('hours.open24lower') ? t('hours.open24') : until ? `${t('why.openUntil', { until })}${row.stayMin < 90 ? t('why.onlyMin', { n: row.stayMin }) : ''}` : t('why.open');
 
   return (
-    <Screen title={t('why.nav')} fallback="/" largeTitle={rank >= 0 ? t('why.rank', { n: rank + 1, total: ranking.open.length }) : t('why.closedOnArrival')} subtitle={venue.shortName}>
+    <Screen title={t('why.nav')} largeTitle={rank >= 0 ? t('why.rank', { n: rank + 1, total: ranking.open.length }) : t('why.closedOnArrival')} subtitle={venue.shortName}>
       <Group style={{ marginTop: 8 }}>
         <Cell icon="seat" iconColor={row.parts.seats >= 0.6 ? colors.green : row.parts.seats >= 0.35 ? colors.amber : colors.red} title={seatsLine} subtitle={confidenceText(live, now)} />
         <Cell icon="walk" title={t('why.walkFrom', { n: row.walkMin, from: ranking.ctx.originLabel })} subtitle={station && ranking.originKind === 'gps' ? t('why.fromStation', { formula: walkFormula(station, venue).split(' = ')[1], station: station.name }) : undefined} />
@@ -61,7 +61,7 @@ export default function WhyScreen() {
 
       {showMath ? (
         <>
-          <SectionHeader>{t('why.score')}</SectionHeader>
+          <SectionHeader>{t('rank.score')}</SectionHeader>
           <Group padded>
             <Text style={[styles.formula, tabular]} accessibilityLabel={t('why.formulaA11y')}>
               {t('why.formula', { seats: RANK_WEIGHTS.seats, prox: RANK_WEIGHTS.proximity, open: RANK_WEIGHTS.openFit, noise: RANK_WEIGHTS.noise, amen: RANK_WEIGHTS.amenities })}
@@ -78,7 +78,7 @@ export default function WhyScreen() {
           <SectionHeader>{t('why.level')}</SectionHeader>
           <Group>
             <View style={{ paddingLeft: CELL_PAD }}>
-              <KeyValue k={t('why.published')} v={live.open ? levelText(live) : t('spot.closed')} />
+              <KeyValue k={t('why.published')} v={live.open ? levelText(live) : t('hours.closed')} />
               <KeyValue k={t('why.fusedShare')} v={t('why.busyDay', { pct: Math.round(live.pct * 100) })} />
               <KeyValue k={t('why.buckets')} v={t('why.bucketsValue', { b0: LEVEL_BOUNDS[0] * 100, l0: levelLabel(0), b1: LEVEL_BOUNDS[1] * 100, l1: levelLabel(1), b2: LEVEL_BOUNDS[2] * 100, l2: levelLabel(2), b3: LEVEL_BOUNDS[3] * 100, l3: levelLabel(3), l4: levelLabel(4) })} />
               <KeyValue k={t('why.reportWeight')} v={t('why.reportWeightValue', { base: FUSION.reportBase, hl: FUSION.halfLifeWeekdayMin })} />
@@ -105,7 +105,7 @@ export default function WhyScreen() {
           </Group>
         </>
       ) : null}
-      <Button title={t('common.done')} onPress={() => goBackOr(router, '/')} style={{ marginTop: 8 }} />
+      <Button title={t('common.done')} onPress={() => goBackOr(router)} style={{ marginTop: 8 }} />
     </Screen>
   );
 }

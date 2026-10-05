@@ -50,7 +50,7 @@ export async function ensurePermission(): Promise<boolean> {
 
 /** A watched spot dropped to the asked-for level. At most one notice per venue per hour. */
 export async function notifyWatchHits(hits: { venue: Venue; live: LiveLevel }[], nowIso: string): Promise<void> {
-  if (Platform.OS === 'web' || hits.length === 0) return;
+  if (Platform.OS === 'web') return;
   if (!getState().settings.notificationsEnabled) return;
   const done = watchRepo.getNotified();
   const nowMs = Date.parse(nowIso);

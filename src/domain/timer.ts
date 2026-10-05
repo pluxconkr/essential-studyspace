@@ -47,11 +47,6 @@ export function scheduleOf(shape: TimerShape): Block[] {
   return out;
 }
 
-export function totalPlannedMs(shape: TimerShape): number {
-  if (shape.id === 'free') return Number.POSITIVE_INFINITY;
-  return shape.blocks * shape.focusMin * 60_000 + (shape.blocks - 1) * shape.breakMin * 60_000;
-}
-
 /** Active (unpaused) milliseconds since the session started. */
 export function activeMs(session: Session, now: number): number {
   const start = toEpoch(session.startedAt);
@@ -96,14 +91,6 @@ export function focusSeconds(session: Session, now: number): number {
     if (end > b.startMs) s += end - b.startMs;
   }
   return Math.floor(s / 1000);
-}
-
-/** Absolute epoch ms of the next block boundary (for a local notification), or null. */
-export function nextBoundaryAt(session: Session, now: number): number | null {
-  if (session.pausedAt || session.endedAt) return null;
-  const st = blockAt(session, now);
-  if (st.kind === 'done' || st.remainingMs === null) return null;
-  return now + st.remainingMs;
 }
 
 /** All remaining boundaries from now (one notification each). */

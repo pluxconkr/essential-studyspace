@@ -26,7 +26,7 @@ describe('string table', () => {
     }
   });
 
-  test('t() interpolates and falls back to English, tn() picks the plural form', () => {
+  test('t() interpolates, tn() picks the plural form, setLocale() picks the language', () => {
     expect(t('now.closesIn', { spot: 'Carr', when: 'in 25 min' })).toBe('Carr closes in 25 min');
     expect(tn(1, 'time.hoursAgo')).toBe('1 hour ago');
     expect(tn(3, 'time.hoursAgo')).toBe('3 hours ago');

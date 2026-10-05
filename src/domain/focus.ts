@@ -4,7 +4,7 @@
  */
 import { t } from '@/i18n';
 
-import { shiftDateKey, toEpoch, zonedParts } from './time';
+import { shiftDateKey, toEpoch, zonedParts, zonedToEpoch } from './time';
 import type { FocusEntry, Venue } from './types';
 
 /** A day counts toward the streak with at least this much focus. */
@@ -43,9 +43,10 @@ export interface WeekSummary {
 /** Last 7 local days including today. */
 export function weekSummary(log: readonly FocusEntry[], now: number): WeekSummary {
   const from = shiftDateKey(zonedParts(now).dateKey, -6);
+  const fromMs = zonedToEpoch(from, 0);
   const out: WeekSummary = { focusSeconds: 0, sessions: 0, goalsDone: 0, goalsTotal: 0 };
   for (const e of log) {
-    if (zonedParts(toEpoch(e.startedAt)).dateKey < from) continue;
+    if (toEpoch(e.startedAt) < fromMs) continue;
     out.focusSeconds += e.focusSeconds;
     out.sessions += 1;
     out.goalsDone += e.goalsDone;

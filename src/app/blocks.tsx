@@ -57,8 +57,8 @@ export default function BlocksScreen() {
   const remove = (id: string) => actions.savePrefs({ ...prefs, blocks: prefs.blocks.filter((b) => b.blockId !== id) });
 
   return (
-    <Screen title={t('blocks.nav')} largeTitle={t('blocks.nav')} subtitle={t('blocks.subtitle')} fallback="/">
-      <SectionHeader>{t('blocks.yourWeek')}</SectionHeader>
+    <Screen title={t('blocks.nav')} largeTitle={t('blocks.nav')} subtitle={t('blocks.subtitle')}>
+      <SectionHeader>{t('profile.nav')}</SectionHeader>
       <Group>
         {blocks.length === 0 ? (
           <Cell icon="gap" iconColor={colors.ink2} title={t('blocks.none')} subtitle={t('blocks.addBelow')} last />

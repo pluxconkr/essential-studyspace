@@ -10,7 +10,7 @@ import { newId } from '@/domain/ids';
 import { formatDuration, formatShort, nowIso, nowMs } from '@/domain/time';
 import { TIMER_SHAPES, focusSeconds, shapeBlurb, shapeById, shapeLabel } from '@/domain/timer';
 import { t } from '@/i18n';
-import type { Goal, Session, TimerShapeId, Venue } from '@/domain/types';
+import type { Goal, Session, TimerShapeId } from '@/domain/types';
 import { cancelSessionNotifications, scheduleSessionNotifications } from '@/services/notifications';
 import { actions, useAppState } from '@/store/appStore';
 import { useRanking, useSessionState, useVenues } from '@/store/derived';
@@ -22,11 +22,12 @@ import { type } from '@/ui/theme';
 
 export default function FocusScreen() {
   const { session, block, now } = useSessionState();
-  if (session && block) return <LiveSession session={session} block={block} now={now} />;
-  return <StartSession />;
+  const [lastLogged, setLastLogged] = useState<string | null>(null);
+  if (session && block) return <LiveSession session={session} block={block} now={now} onLogged={setLastLogged} />;
+  return <StartSession lastLogged={lastLogged} setLastLogged={setLastLogged} />;
 }
 
-function LiveSession({ session, block, now }: { session: Session; block: NonNullable<ReturnType<typeof useSessionState>['block']>; now: number }) {
+function LiveSession({ session, block, now, onLogged }: { session: Session; block: NonNullable<ReturnType<typeof useSessionState>['block']>; now: number; onLogged: (body: string) => void }) {
   const router = useRouter();
   const venues = useVenues();
   const venue = venues.find((v) => v.venueId === session.venueId) ?? null;
@@ -39,22 +40,26 @@ function LiveSession({ session, block, now }: { session: Session; block: NonNull
     void cancelSessionNotifications();
   };
   const resume = () => {
-    actions.updateSession((s) => ({ ...s, pausedAt: null, pausedMs: s.pausedMs + (s.pausedAt ? Math.max(0, now - Date.parse(s.pausedAt)) : 0) }));
-    const s = { ...session, pausedAt: null, pausedMs: session.pausedMs + (session.pausedAt ? Math.max(0, now - Date.parse(session.pausedAt)) : 0) };
-    void scheduleSessionNotifications(s, now);
+    const next = { ...session, pausedAt: null, pausedMs: session.pausedMs + (session.pausedAt ? Math.max(0, now - Date.parse(session.pausedAt)) : 0) };
+    actions.updateSession(() => next);
+    void scheduleSessionNotifications(next, now);
   };
   const skip = () => {
     if (block.remainingMs === null) return;
-    const rem = block.remainingMs;
     // Shift the whole schedule so the current block ends now. Absolute timestamps make this one subtraction.
-    actions.updateSession((s) => ({ ...s, startedAt: new Date(Date.parse(s.startedAt) - rem).toISOString() }));
-    void scheduleSessionNotifications({ ...session, startedAt: new Date(Date.parse(session.startedAt) - rem).toISOString() }, now);
+    const next = { ...session, startedAt: new Date(Date.parse(session.startedAt) - block.remainingMs).toISOString() };
+    actions.updateSession(() => next);
+    void scheduleSessionNotifications(next, now);
   };
   const end = () => {
     const doEnd = () => {
       const entry = actions.endSession(now);
       void cancelSessionNotifications();
-      if (entry) Alert.alert(t('focus.logged'), t('focus.loggedBody', { time: formatDuration(entry.focusSeconds), done: entry.goalsDone, total: entry.goalsTotal }));
+      if (entry) {
+        const body = t('focus.loggedBody', { time: formatDuration(entry.focusSeconds), done: entry.goalsDone, total: entry.goalsTotal });
+        Alert.alert(t('focus.logged'), body);
+        onLogged(body);
+      }
     };
     if (Platform.OS === 'web') {
       doEnd();
@@ -73,7 +78,7 @@ function LiveSession({ session, block, now }: { session: Session; block: NonNull
   };
 
   return (
-    <Screen largeTitle={t('focus.title')} subtitle={`${venue ? venue.shortName : t('focus.elsewhere')} · ${shapeLabel(shape)}`} note={session.isDemo ? t('demo.session') : undefined} testID="focus-live">
+    <Screen largeTitle={t('tab.focus')} subtitle={`${venue ? venue.shortName : t('focus.elsewhere')} · ${shapeLabel(shape)}`} note={session.isDemo ? t('demo.session') : undefined} testID="focus-live">
       <Group padded style={{ marginTop: 8, alignItems: 'center' }}>
         <TimerRing block={block} />
         <BlockStrip session={session} block={block} />
@@ -88,8 +93,8 @@ function LiveSession({ session, block, now }: { session: Session; block: NonNull
 
       <SectionHeader>{t('focus.goals')}</SectionHeader>
       <Group>
-        {session.goals.map((g, i) => (
-          <GoalRow key={g.goalId} goal={g} onToggle={(v) => actions.updateSession((s) => ({ ...s, goals: s.goals.map((x) => (x.goalId === g.goalId ? { ...x, done: v } : x)) }))} onRemove={() => actions.updateSession((s) => ({ ...s, goals: s.goals.filter((x) => x.goalId !== g.goalId) }))} last={false && i === session.goals.length - 1} />
+        {session.goals.map((g) => (
+          <GoalRow key={g.goalId} goal={g} onToggle={(v) => actions.updateSession((s) => ({ ...s, goals: s.goals.map((x) => (x.goalId === g.goalId ? { ...x, done: v } : x)) }))} onRemove={() => actions.updateSession((s) => ({ ...s, goals: s.goals.filter((x) => x.goalId !== g.goalId) }))} />
         ))}
         <Field icon="plus" value={goalText} onChangeText={setGoalText} placeholder={t('focus.addGoal')} onSubmitEditing={addGoal} returnKeyType="done" maxLength={120} last />
       </Group>
@@ -102,19 +107,17 @@ function LiveSession({ session, block, now }: { session: Session; block: NonNull
   );
 }
 
-function StartSession() {
+function StartSession({ lastLogged, setLastLogged }: { lastLogged: string | null; setLastLogged: (v: string | null) => void }) {
   const router = useRouter();
   const ranking = useRanking();
   const focusLog = useAppState((s) => s.focusLog);
   const venues = useVenues();
-  const location = useAppState((s) => s.location);
   const [shapeId, setShapeId] = useState<TimerShapeId>('p50');
   const [venueId, setVenueId] = useState<string | null>(ranking.open[0]?.venue.venueId ?? null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [goalText, setGoalText] = useState('');
-  const [lastLogged, setLastLogged] = useState<string | null>(null);
 
-  const choices: (Venue | null)[] = [...ranking.open.slice(0, 3).map((r) => r.venue), null];
+  const choices = [...ranking.open.slice(0, 3), null];
   const addGoal = () => {
     const t = goalText.trim();
     if (!t) return;
@@ -129,10 +132,9 @@ function StartSession() {
     setLastLogged(null);
   };
   const recent = focusLog.slice(0, 5);
-  void location;
 
   return (
-    <Screen largeTitle={t('focus.title')} subtitle={t('focus.subtitle')} testID="focus-start">
+    <Screen largeTitle={t('tab.focus')} subtitle={t('focus.subtitle')} testID="focus-start">
       {lastLogged ? (
         <Callout icon="checkCircle" tone="green" title={t('focus.logged')}>
           <Subhead>{lastLogged}</Subhead>
@@ -147,8 +149,8 @@ function StartSession() {
 
       <SectionHeader>{t('focus.where')}</SectionHeader>
       <Group>
-        {choices.map((v, i) => (
-          <Cell key={v?.venueId ?? 'none'} icon={v ? kindIcon(v.kind) : 'solo'} title={v ? v.shortName : t('focus.elsewhere')} subtitle={v ? t('map.minFrom', { n: ranking.open.find((r) => r.venue.venueId === v.venueId)?.walkMin ?? '–', station: ranking.ctx.originLabel }) : t('focus.stillCounts')} accessory={venueId === (v?.venueId ?? null) ? 'check' : 'none'} onPress={() => setVenueId(v?.venueId ?? null)} accessibilityRole="button" accessibilityState={{ selected: venueId === (v?.venueId ?? null) }} last={i === choices.length - 1} />
+        {choices.map((r, i) => (
+          <Cell key={r?.venue.venueId ?? 'none'} icon={r ? kindIcon(r.venue.kind) : 'solo'} title={r ? r.venue.shortName : t('focus.elsewhere')} subtitle={r ? t('map.minFrom', { n: r.walkMin, station: ranking.ctx.originLabel }) : t('focus.stillCounts')} accessory={venueId === (r?.venue.venueId ?? null) ? 'check' : 'none'} onPress={() => setVenueId(r?.venue.venueId ?? null)} accessibilityRole="button" accessibilityState={{ selected: venueId === (r?.venue.venueId ?? null) }} last={i === choices.length - 1} />
         ))}
       </Group>
       <SectionHeader>{t('focus.goalsOptional')}</SectionHeader>
@@ -171,7 +173,7 @@ function StartSession() {
             ))}
           </Group>
           <Group>
-            <Cell icon="chart" title={t('focus.yourWeek')} accessory="chevron" onPress={() => router.push('/profile')} last />
+            <Cell icon="chart" title={t('profile.nav')} accessory="chevron" onPress={() => router.push('/profile')} last />
           </Group>
         </>
       ) : null}

@@ -8,11 +8,10 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
 import { venueRepo, watchRepo } from '@/data/repos';
-import { fuse } from '@/domain/levels';
-import type { LiveLevel, Venue } from '@/domain/types';
 
 import { fetchCrowd } from './crowdClient';
 import { notifyWatchHits } from './notifications';
+import { watchHits } from './refresh';
 
 export const WATCH_POLL_TASK = 'studyspace-watch-poll';
 
@@ -25,13 +24,7 @@ if (Platform.OS !== 'web') {
       const snap = await fetchCrowd(watches.map((w) => w.venueId));
       if (!snap) return BackgroundTask.BackgroundTaskResult.Failed;
       const now = Date.now();
-      const hits: { venue: Venue; live: LiveLevel }[] = [];
-      for (const w of watches) {
-        const v = venues.find((x) => x.venueId === w.venueId);
-        if (!v) continue;
-        const live = fuse({ venue: v, reports: snap.reports[v.venueId] ?? [], now });
-        if (live.open && live.confidence !== 'none' && live.level <= w.notifyAtOrBelow) hits.push({ venue: v, live });
-      }
+      const hits = watchHits(watches, venues, snap.reports, now);
       if (hits.length > 0) await notifyWatchHits(hits, new Date(now).toISOString());
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch {

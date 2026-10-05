@@ -63,5 +63,3 @@ export const files = {
     }
   },
 };
-
-export type Files = typeof files;

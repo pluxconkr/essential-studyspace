@@ -60,13 +60,6 @@ export const kv = {
       /* ignore */
     }
   },
-  keys(): string[] {
-    try {
-      return store.getAllKeysSync();
-    } catch {
-      return [];
-    }
-  },
   clear(): void {
     try {
       store.clearSync();
@@ -75,5 +68,3 @@ export const kv = {
     }
   },
 };
-
-export type KV = typeof kv;

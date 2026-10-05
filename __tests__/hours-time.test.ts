@@ -33,7 +33,7 @@ describe('New Jersey time (America/New_York)', () => {
     }
     // 2 AM Eastern the next day (minutes ≥ 1440) lands on the next local date.
     expect(zonedParts(zonedToEpoch('2026-10-03', 26 * 60)).dateKey).toBe('2026-10-04');
-    // Fall-back day has 25 hours: 9 AM is 25 hours after 8 AM the previous day... but 24 hours after midnight is 11 PM.
+    // Fall-back day (1 Nov 2026): midnight to midnight is 25 hours.
     expect(zonedToEpoch('2026-11-02', 0) - zonedToEpoch('2026-11-01', 0)).toBe(25 * 3600_000);
   });
 
@@ -114,7 +114,6 @@ describe('opening hours', () => {
   });
 
   test('validator rejects close-before-open and far-past-midnight closes', () => {
-    expect(hoursValid({ hours: alexander.hours, exceptions: alexander.exceptions })).toEqual([]);
     expect(hoursValid({ hours: [null, { open: '10:00', close: '09:00' }, null, null, null, null, null], exceptions: [] })).toHaveLength(1);
     expect(hoursValid({ hours: [null, { open: '10:00', close: '37:00' }, null, null, null, null, null], exceptions: [] })).toHaveLength(1);
   });

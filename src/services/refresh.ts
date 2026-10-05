@@ -5,10 +5,10 @@
 import { cacheMetaRepo, dropLowPriority, isLowOnSpace, reportStorageNotice, sanitizeVenues, venueRepo } from '@/data/repos';
 import { fuse } from '@/domain/levels';
 import { nowIso, nowMs } from '@/domain/time';
-import type { AssetKey, LiveLevel, Venue } from '@/domain/types';
+import type { AssetKey, CrowdReport, LiveLevel, Venue, Watch } from '@/domain/types';
 import { actions, getState, isOfflineNow } from '@/store/appStore';
 
-import { fetchCrowd, postReport } from './crowdClient';
+import { fetchCrowd, postReport, withTimeout } from './crowdClient';
 import { notifyWatchHits } from './notifications';
 
 export interface RefreshResult {
@@ -62,11 +62,9 @@ export async function refreshCrowd(): Promise<RefreshResult['crowd']> {
 export async function refreshVenues(): Promise<RefreshResult['venues']> {
   if (!VENUES_URL) return 'no-source';
   if (isOfflineNow()) return 'skipped';
+  const t = withTimeout();
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10_000);
-    const res = await fetch(VENUES_URL, { headers: { Accept: 'application/json' }, signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetch(VENUES_URL, { headers: { Accept: 'application/json' }, signal: t.signal });
     if (!res.ok) return 'failed';
     const body = (await res.json()) as { venues?: unknown; version?: string };
     const clean = sanitizeVenues(body.venues);
@@ -78,18 +76,18 @@ export async function refreshVenues(): Promise<RefreshResult['venues']> {
     return 'ok';
   } catch {
     return 'failed';
+  } finally {
+    t.done();
   }
 }
 
 /** Watched spots that are open and at/below the asked level right now. Other students' reports only — a watch must not fire on your own check-in. */
-export function watchHits(): { venue: Venue; live: LiveLevel }[] {
-  const { watches, venues, crowd } = getState();
-  const now = nowMs();
+export function watchHits(watches: Watch[], venues: Venue[], reports: Record<string, CrowdReport[]>, now: number): { venue: Venue; live: LiveLevel }[] {
   const hits: { venue: Venue; live: LiveLevel }[] = [];
   for (const w of watches) {
     const v = venues.find((x) => x.venueId === w.venueId);
     if (!v) continue;
-    const live = fuse({ venue: v, reports: crowd?.reports[v.venueId] ?? [], now });
+    const live = fuse({ venue: v, reports: reports[v.venueId] ?? [], now });
     if (live.open && live.confidence !== 'none' && live.level <= w.notifyAtOrBelow) hits.push({ venue: v, live });
   }
   return hits;
@@ -100,7 +98,8 @@ let inFlight: Promise<RefreshResult> | null = null;
 /** Refresh everything that can be refreshed. Concurrent calls share one run. */
 export function refreshAll(): Promise<RefreshResult> {
   if (inFlight) return inFlight;
-  actions.setRefreshing(true);
+  // The stamp means "a network attempt started now": never offline, never at the end of the run.
+  actions.setRefreshing(true, isOfflineNow() ? undefined : Date.now());
   inFlight = (async () => {
     if (isLowOnSpace()) reportStorageNotice(dropLowPriority(), true);
     const total = VENUES_URL ? 3 : 2;
@@ -113,9 +112,10 @@ export function refreshAll(): Promise<RefreshResult> {
     };
     const synced = await syncCheckIns().then(tick);
     const [crowd, venues] = await Promise.all([refreshCrowd().then(tick), VENUES_URL ? refreshVenues().then(tick) : refreshVenues()]);
-    const hits = crowd === 'ok' || crowd === 'not-configured' ? watchHits() : [];
+    const s = getState();
+    const hits = crowd === 'ok' || crowd === 'not-configured' ? watchHits(s.watches, s.venues, s.crowd?.reports ?? {}, nowMs()) : [];
     if (hits.length > 0) await notifyWatchHits(hits, nowIso());
-    actions.setRefreshing(false, Date.now());
+    actions.setRefreshing(false);
     return { crowd, venues, synced, watchHits: hits.length };
   })().finally(() => {
     inFlight = null;

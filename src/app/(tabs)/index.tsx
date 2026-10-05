@@ -8,7 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { arrivalCandidate } from '@/domain/arrival';
 import { formatBlock } from '@/domain/blocks';
 import { haversineM } from '@/domain/geo';
-import { minutesToClose, untilLabel } from '@/domain/hours';
+import { isClosingSoon, minutesToClose, untilLabel } from '@/domain/hours';
 import { levelText } from '@/domain/levels';
 import { formatClock, formatDuration, formatIn, formatShort, zonedParts, zonedToEpoch } from '@/domain/time';
 import { formatHourBand } from '@/domain/focus';
@@ -57,7 +57,7 @@ export default function NowScreen() {
   const top = ranking.open.slice(0, 6);
   const closed = ranking.closed.slice(0, 4);
 
-  const closingSoon = useMemo(() => ranking.open.filter((r) => (minutesToClose(r.state, now) ?? 999) <= 60).sort((a, b) => (minutesToClose(a.state, now) ?? 0) - (minutesToClose(b.state, now) ?? 0)), [ranking.open, now]);
+  const closingSoon = useMemo(() => ranking.open.filter((r) => isClosingSoon(r.state, now)).sort((a, b) => (minutesToClose(a.state, now) ?? 0) - (minutesToClose(b.state, now) ?? 0)), [ranking.open, now]);
   const p = zonedParts(now);
   const midnight = zonedToEpoch(p.dateKey, 1440);
   const lateOpen = useMemo(() => (p.minutesOfDay >= 18 * 60 ? ranking.open.filter((r) => (r.state.closesAt ?? 0) > midnight) : []), [ranking.open, midnight, p.minutesOfDay]);
@@ -92,8 +92,8 @@ export default function NowScreen() {
 
       {arrival ? (
         <Callout icon="checkin" tone="navy" title={t('now.arrival', { spot: arrival.shortName })}>
-          <Subhead>{t('now.arrivalBody')}</Subhead>
-          <Button title={t('now.checkIn')} size="sm" variant="tonal" style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => router.push({ pathname: '/checkin/[id]', params: { id: arrival.venueId } })} testID="arrival-checkin" />
+          <Subhead>{t('checkin.title')}</Subhead>
+          <Button title={t('checkin.nav')} size="sm" variant="tonal" style={{ marginTop: 10, alignSelf: 'flex-start' }} onPress={() => router.push({ pathname: '/checkin/[id]', params: { id: arrival.venueId } })} testID="arrival-checkin" />
         </Callout>
       ) : null}
 
@@ -135,16 +135,16 @@ export default function NowScreen() {
 
       {closed.length > 0 ? (
         <>
-          <SectionHeader>{t('now.closedNow')}</SectionHeader>
+          <SectionHeader>{t('level.closedNow')}</SectionHeader>
           <Group>
             {closed.map((r, i) => (
-              <Cell key={r.venue.venueId} icon={kindIcon(r.venue.kind)} iconColor={colors.ink2} title={r.venue.shortName} subtitle={r.state.open && r.state.closesAt ? t('now.closesBeforeArrival', { closes: zonedParts(r.state.closesAt).minutesOfDay === 0 ? t('now.closesAtMidnight') : t('now.closesAt', { time: formatClock(r.state.closesAt) }) }) : r.state.opensAt ? t('now.opens', { when: formatShort(r.state.opensAt) }) : t('now.closed')} value={t('common.min', { n: r.walkMin })} accessory="chevron" onPress={() => router.push({ pathname: '/spot/[id]', params: { id: r.venue.venueId } })} last={i === closed.length - 1} />
+              <Cell key={r.venue.venueId} icon={kindIcon(r.venue.kind)} iconColor={colors.ink2} title={r.venue.shortName} subtitle={r.state.open && r.state.closesAt ? t('now.closesBeforeArrival', { closes: zonedParts(r.state.closesAt).minutesOfDay === 0 ? t('now.closesAtMidnight') : t('now.closesAt', { time: formatClock(r.state.closesAt) }) }) : r.state.opensAt ? t('now.opens', { when: formatShort(r.state.opensAt) }) : t('hours.closed')} value={t('common.min', { n: r.walkMin })} accessory="chevron" onPress={() => router.push({ pathname: '/spot/[id]', params: { id: r.venue.venueId } })} last={i === closed.length - 1} />
             ))}
           </Group>
         </>
       ) : null}
 
-      <SectionHeader>{t('now.yourWeek')}</SectionHeader>
+      <SectionHeader>{t('profile.nav')}</SectionHeader>
       <Group>
         <Cell
           icon="flame"

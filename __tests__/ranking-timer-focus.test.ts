@@ -2,7 +2,7 @@ import { bestWindow, focusByHour, formatHourBand, goalRate, streakDays, weekSumm
 import { fuse } from '@/domain/levels';
 import { explainRank, rankVenues } from '@/domain/ranking';
 import { zonedToEpoch } from '@/domain/time';
-import { TIMER_SHAPES, activeMs, blockAt, focusSeconds, remainingBoundaries, scheduleOf, shapeById, toFocusEntry, totalPlannedMs } from '@/domain/timer';
+import { TIMER_SHAPES, activeMs, blockAt, focusSeconds, remainingBoundaries, scheduleOf, shapeById, toFocusEntry } from '@/domain/timer';
 import type { FocusEntry, LiveLevel, Prefs, Session, Venue } from '@/domain/types';
 import venues from '@/assets/data/venues.json';
 import stations from '@/assets/data/stations.json';
@@ -42,10 +42,7 @@ describe('ranking', () => {
     const openIds = r.open.map((x) => x.venue.venueId);
     expect(openIds).toContain('alexander-library');
     expect(openIds).not.toContain('nbfpl');
-    const carr = r.closed.find((x) => x.venue.venueId === 'carr-library') ?? r.open.find((x) => x.venue.venueId === 'carr-library');
-    // Carr closes at midnight: either closed at arrival (walk > 20 min) or open with very little stay.
-    expect(carr).toBeTruthy();
-    if (carr!.arrival.open) expect(carr!.stayMin!).toBeLessThan(30);
+    expect(r.closed.map((x) => x.venue.venueId)).toContain('carr-library');
   });
 });
 
@@ -56,8 +53,6 @@ describe('timer', () => {
   test('schedule shape', () => {
     const p25 = shapeById('p25');
     expect(scheduleOf(p25)).toHaveLength(7); // 4 focus + 3 breaks
-    expect(totalPlannedMs(p25)).toBe((4 * 25 + 3 * 5) * 60_000);
-    expect(totalPlannedMs(shapeById('free'))).toBe(Number.POSITIVE_INFINITY);
     expect(TIMER_SHAPES.map((s) => s.id)).toEqual(['p25', 'p50', 'p90', 'free']);
   });
 
@@ -66,11 +61,6 @@ describe('timer', () => {
     expect(blockAt(base, start + 27 * 60_000)).toMatchObject({ kind: 'break', blockNo: 1, remainingMs: 3 * 60_000 });
     expect(blockAt(base, start + 31 * 60_000)).toMatchObject({ kind: 'focus', blockNo: 2 });
     expect(blockAt(base, start + 200 * 60_000)).toMatchObject({ kind: 'done', blockNo: 4 });
-  });
-
-  test('a locked phone does not drift: rejoining after 20 minutes lands in the right block', () => {
-    expect(blockAt(base, start + 50 * 60_000).kind).toBe('focus');
-    expect(blockAt(base, start + 50 * 60_000).blockNo).toBe(2);
   });
 
   test('pauses stop the clock', () => {

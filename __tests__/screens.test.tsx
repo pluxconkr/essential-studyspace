@@ -6,7 +6,7 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 
 async function press(el: ReturnType<typeof screen.getByText>) {
   await act(async () => {
-    fireEvent.press(el);
+    await fireEvent.press(el);
     jest.runOnlyPendingTimers();
   });
 }
@@ -168,7 +168,7 @@ describe('Focus tab', () => {
     expect(getState().session?.shapeId).toBe('p25');
     expect(screen.getByText(/focus · block 1 of 4/)).toBeTruthy();
     expect(screen.getByText('Goals')).toBeTruthy();
-    actions.discardSession();
+    await act(() => actions.discardSession());
   });
 });
 

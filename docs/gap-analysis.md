@@ -130,3 +130,26 @@ A second, independent read of spec vs. code found defects the table above missed
 14. EN + ES localisation of all student-facing strings.
 
 Deferred with reasons: BSSID (platform), dwell/check-out and geofence reminders (background location), points (social phase), subject split and reliability (tables), notes with k ≥ 5 (relay feature), server-side aggregation (needs traffic), learned forecasts (needs data), live LibCal feed (static per term is correct today), venue console (separate surface — owner's call), age band/verification (no social surface in v1).
+
+## Outcome (2026-10-05)
+
+All fourteen G005 items shipped; where each one lives:
+
+| # | Where it landed | Checked by |
+|---|---|---|
+| 1 | `dedupeReports`, confidence rules in `src/domain/levels.ts` | `__tests__/levels.test.ts` |
+| 2 | `watchHits` / `refreshAll` / `refreshIfStale` in `src/services/refresh.ts`; 5-minute foreground refresh in `src/app/_layout.tsx` | `__tests__/refresh.test.ts` (stamp semantics fixed in G006) |
+| 3 | `fuseZones`, `latestReportDetails` in `src/domain/levels.ts`; `noise` + `amenities` in `src/app/api/crowd+api.ts` and `src/services/crowdClient.ts` | `__tests__/crowd-api.test.ts` |
+| 4 | `locationRepo` removed; the fix lives in `appStore` memory only | no storage key for a fix exists in `src/data/repos.ts` (grep) |
+| 5 | `__DEV__` guard in `src/app/(tabs)/index.tsx`; `RATE_LIMIT` in the relay | `__tests__/crowd-api.test.ts` |
+| 6 | `assets/data/venues.json` (19 venues), `docs/venue-sources.md` | `__tests__/bundled-data.test.ts` |
+| 7 | "Open late" layer in `src/app/(tabs)/map.tsx` (`opensLate` in `src/domain/hours.ts`) | `__tests__/screens.test.tsx` |
+| 8 | `src/domain/arrival.ts`; arrival card on Now; "Not here?" row on check-in | `__tests__/phase1-gaps.test.ts` |
+| 9 | `src/services/backgroundPoll.ts` (`expo-background-task`), Info.plist keys from the `expo-background-task` plugin | manual (needs a development build) |
+| 10 | `src/app/privacy.tsx`, linked from Profile › Settings | `__tests__/screens.test.tsx` |
+| 11 | `shownLevel` on check-ins, `wastedTrips` in `src/domain/honesty.ts`, "Shown vs. found" in Profile | `__tests__/phase1-gaps.test.ts` |
+| 12 | `accessibleSeats` on zones (`src/domain/types.ts`, data) | `__tests__/bundled-data.test.ts` |
+| 13 | `src/domain/safety.ts`, "Getting home late" section on spots open after 9 PM | `__tests__/phase1-gaps.test.ts` |
+| 14 | `src/i18n` (EN + ES, device language), `assets/locales` | `__tests__/i18n.test.ts`, Spanish screenshots in the session log |
+
+§12 "home renders usable content < 1.2 s": not measured as wall-clock on a device (Expo Go timings are dominated by the Metro bundle download). What runs before the first frame is one synchronous SQLite read per store key plus JSON.parse, measured at under a millisecond for a full 2,000-entry focus log in node, and nothing waits for the network; the optimisation record is `docs/perf.md`.

@@ -20,11 +20,9 @@ All text styles live in `src/ui/theme.ts`. No `fontSize`, `fontWeight`, `lineHei
 | Token | Size / line | Weight | Colour | Use | Max Dynamic Type |
 |---|---|---|---|---|---|
 | `largeTitle` | 28 / 34 | 700 | ink | page title | 1.5× |
-| `title2` | 22 / 28 | 700 | ink | (reserved) | — |
 | `title3` | 20 / 25 | 600 | ink | in-card heading | system |
 | `headline` | 17 / 22 | 600 | ink | callout title, button label, cell emphasis | 1.5× (buttons) |
 | `body` | 17 / 22 | 400 | ink | cell title, paragraph | system |
-| `callout` | 16 / 21 | 400 | ink | (reserved) | — |
 | `subheadline` | 15 / 20 | 400 | ink2 | page subtitle, callout body | system |
 | `footnote` | 13 / 18 | 400 | ink2 | cell subtitle, section footer, honesty line | system |
 | `caption` | 12 / 16 | 400 | ink2 | chart legends, offline strip (600) | 1.4× |
@@ -32,14 +30,15 @@ All text styles live in `src/ui/theme.ts`. No `fontSize`, `fontWeight`, `lineHei
 | `sectionHeader` | 13 / 18 | 400 | ink2, uppercase | section header | system |
 | `display` | 34 / 40 | 700 | tone colour | the level word on a spot ("Packed") | 1.2× |
 | `numerals` | 52 / 60 | 600, rounded, tabular | ink | timer ring | 1.1× (fits) |
-| `control` | 15 / 20 | 500 (600 selected) | ink | segmented control labels | 1.3× (fits) |
+| `control` / `controlSmall` | 15 / 20 · 13 / 18 | 500 (600 selected) | ink | segmented control labels; small when four or more options share the row | 1.3× (fits) |
 | `tabLabel` | 10.5 | 500 | tint / ink2 | tab bar | none (UIKit behaviour) |
-| `mapLabel` / `mapTag` / `legend` | 9.5 / 13 / 12.5 | 600 | ink2 | SVG map text, map legend | none |
+| `mapLabel` / `mapAttribution` / `mapTag` / `legend` | 9.5 / 9.5 / 13 / 12.5 | 600 / 400 / 600 / 600 | ink2 | SVG map text, attribution, map legend | none |
+| `mapPin` / `chartAxis` | 10 / 10 | 800 / 400 | white / ink2 | SVG pin numeral, chart axis labels | none |
 
 ## Component rules
 
 - **Cell**: leading icon or bars (fixed width) · title `body` · subtitle `footnote` (wraps, at most two lines of content) · optional value `body`/ink2/tabular · optional chevron. Separator inset to the title edge. Pressed state = fill, no scale.
-- **Section**: uppercase `sectionHeader`, optional right-aligned header note (same style), one `footnote` footer of at most one sentence.
+- **Section**: uppercase `sectionHeader`, optional right-aligned header note (same style; at large text sizes it wraps under the title and stays right-aligned), one `footnote` footer of at most one sentence.
 - **Callout**: inline icon in the tone colour · `headline` title · `subheadline` body. Tones: navy information, amber caution (closing soon, exceptions, stale), red hard stop (closed for renovation), green done.
 - **Buttons**: 50 pt, 12 pt radius, `headline` label, optional 18 pt icon. Variants: primary (navy), tonal, secondary, red, green, ghost. Side-by-side pairs stack vertically above 1.3× text scale.
 - **Segmented**: iOS style; with four or more options every label uses the smaller control size uniformly (no per-segment shrinking) and labels are chosen to fit ("N. Brunswick"). Where the options have descriptions (choosing an area in Preferences/Onboarding) use a check list of Cells instead, like the station picker.

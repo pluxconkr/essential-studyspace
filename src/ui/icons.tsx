@@ -2,13 +2,15 @@
  * Icons: SF Symbols on iOS (expo-symbols), Ionicons elsewhere. Always inline, never on a
  * background shape — the glyph and its tint carry the meaning.
  */
-import Ionicons from '@expo/vector-icons/Ionicons';
+import type Ionicons from '@expo/vector-icons/Ionicons';
 import { SymbolView, type SymbolWeight } from 'expo-symbols';
 import type { ComponentProps } from 'react';
 import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import type { Amenity, NoisePolicy, VenueKind } from '@/domain/types';
 import { t } from '@/i18n';
+
+import { IonFallback } from './ion-fallback';
 
 type IonName = ComponentProps<typeof Ionicons>['name'];
 
@@ -37,10 +39,7 @@ const ICONS = {
   group: { sf: 'person.3.fill', ion: 'people-outline' },
   solo: { sf: 'person.fill', ion: 'person-outline' },
   food: { sf: 'fork.knife', ion: 'restaurant-outline' },
-  computer: { sf: 'desktopcomputer', ion: 'desktop-outline' },
-  printer: { sf: 'printer.fill', ion: 'print-outline' },
   accessible: { sf: 'figure.roll', ion: 'accessibility-outline' },
-  table: { sf: 'table.furniture.fill', ion: 'grid-outline' },
   checkin: { sf: 'mappin.and.ellipse', ion: 'pin-outline' },
   check: { sf: 'checkmark', ion: 'checkmark' },
   checkCircle: { sf: 'checkmark.circle.fill', ion: 'checkmark-circle' },
@@ -51,38 +50,29 @@ const ICONS = {
   info: { sf: 'info.circle', ion: 'information-circle-outline' },
   offline: { sf: 'wifi.slash', ion: 'cloud-offline-outline' },
   download: { sf: 'arrow.down.circle', ion: 'cloud-download-outline' },
-  refresh: { sf: 'arrow.clockwise', ion: 'refresh' },
   bell: { sf: 'bell.fill', ion: 'notifications-outline' },
   bellOutline: { sf: 'bell', ion: 'notifications-outline' },
-  eye: { sf: 'eye.fill', ion: 'eye-outline' },
-  eyeSlash: { sf: 'eye.slash.fill', ion: 'eye-off-outline' },
   shield: { sf: 'checkmark.shield.fill', ion: 'shield-checkmark-outline' },
   flask: { sf: 'function', ion: 'flask-outline' },
-  star: { sf: 'star.fill', ion: 'star' },
   trash: { sf: 'trash', ion: 'trash-outline' },
   settings: { sf: 'slider.horizontal.3', ion: 'options-outline' },
   calendar: { sf: 'calendar', ion: 'calendar-outline' },
   flame: { sf: 'flame.fill', ion: 'flame-outline' },
   chart: { sf: 'chart.bar.fill', ion: 'bar-chart-outline' },
-  target: { sf: 'target', ion: 'locate-outline' },
   play: { sf: 'play.fill', ion: 'play' },
   pause: { sf: 'pause.fill', ion: 'pause' },
   stop: { sf: 'stop.fill', ion: 'stop' },
   forward: { sf: 'forward.end.fill', ion: 'play-skip-forward' },
   plus: { sf: 'plus', ion: 'add' },
   minus: { sf: 'minus', ion: 'remove' },
-  goals: { sf: 'checklist', ion: 'list' },
   history: { sf: 'clock.arrow.circlepath', ion: 'time-outline' },
-  lock: { sf: 'lock.fill', ion: 'lock-closed-outline' },
   question: { sf: 'questionmark.circle', ion: 'help-circle-outline' },
   phone: { sf: 'phone.fill', ion: 'call' },
   link: { sf: 'safari', ion: 'globe-outline' },
-  school: { sf: 'graduationcap.fill', ion: 'school-outline' },
   alert: { sf: 'exclamationmark.triangle.fill', ion: 'warning' },
   location: { sf: 'location.fill', ion: 'navigate' },
   locationOff: { sf: 'location.slash', ion: 'navigate-outline' },
   pin: { sf: 'mappin', ion: 'location-outline' },
-  sparkle: { sf: 'sparkles', ion: 'sparkles-outline' },
   document: { sf: 'doc.text', ion: 'document-text-outline' },
   share: { sf: 'antenna.radiowaves.left.and.right', ion: 'radio-outline' },
   gap: { sf: 'hourglass', ion: 'hourglass-outline' },
@@ -96,7 +86,7 @@ export type IconName = keyof typeof ICONS;
  */
 export function Icon({ name, size = 20, color = '#0B0F19', weight = 'medium', style }: { name: IconName; size?: number; color?: string; weight?: SymbolWeight; style?: StyleProp<ViewStyle> }) {
   const def = ICONS[name];
-  const fallback = <Ionicons name={def.ion} size={size} color={color} />;
+  const fallback = <IonFallback name={def.ion} size={size} color={color} />;
   const glyph = Platform.OS === 'ios' ? <SymbolView name={def.sf as never} size={size} tintColor={color} weight={weight} resizeMode="scaleAspectFit" style={{ width: size, height: size }} fallback={fallback} /> : fallback;
   return (
     <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}>
@@ -120,31 +110,6 @@ export function kindIcon(kind: VenueKind): IconName {
       return 'studentCenter';
     default:
       return 'cafe';
-  }
-}
-
-export function amenityIcon(a: Amenity): IconName {
-  switch (a) {
-    case 'outlets':
-      return 'outlet';
-    case 'wifi-eduroam':
-    case 'wifi-public':
-      return 'wifi';
-    case 'group-rooms':
-      return 'group';
-    case 'computers':
-      return 'computer';
-    case 'printing':
-      return 'printer';
-    case 'cafe':
-    case 'food-nearby':
-      return 'food';
-    case 'late-night':
-      return 'moon';
-    case 'solo-desks':
-      return 'solo';
-    default:
-      return 'table';
   }
 }
 

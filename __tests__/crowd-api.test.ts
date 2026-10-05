@@ -47,7 +47,6 @@ describe('POST /api/crowd', () => {
 
   test('memory store keeps the newest reports per venue', async () => {
     const s = createMemoryStore();
-    setStore(s);
     const at = new Date().toISOString();
     for (let i = 0; i < MAX_PER_VENUE + 5; i++) await s.push('x', { zoneId: null, level: 1, at, weight: 1, noise: null, amenities: [] });
     expect(await s.list('x')).toHaveLength(MAX_PER_VENUE);
@@ -60,5 +59,15 @@ describe('POST /api/crowd', () => {
       { zoneId: null, level: 1, at: new Date(now - 4 * 3600_000).toISOString(), weight: 1, noise: null, amenities: [] },
     ];
     expect(fresh(list, now)).toHaveLength(1);
+  });
+});
+
+describe('POST retries', () => {
+  test('a re-sent report (lost response, same body) is kept once', async () => {
+    const body = { venueId: 'alexander-library', zoneId: null, level: 2, at: new Date().toISOString(), weight: 0.8, noise: 1, amenities: ['outlets'] };
+    expect((await post(body)).status).toBe(200);
+    expect((await post(body)).status).toBe(200);
+    const g = await (await get('alexander-library')).json();
+    expect(g.reports['alexander-library']).toHaveLength(1);
   });
 });

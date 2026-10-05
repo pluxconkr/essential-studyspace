@@ -13,7 +13,7 @@ import type { DemoScenario } from '@/domain/types';
 import { t, tn } from '@/i18n';
 import { applyDemoScenario, scenarioLabel } from '@/services/demo';
 import { refreshAll, type RefreshResult } from '@/services/refresh';
-import { actions, isOfflineNow, useAppState } from '@/store/appStore';
+import { actions, hydrate, isOfflineNow, useAppState } from '@/store/appStore';
 import { useNow, useRealNow } from '@/store/derived';
 import type { IconName } from '@/ui/icons';
 import { Button, Callout, Cell, Group, ProgressBar, ProgressRing, SectionFooter, SectionHeader, Segmented, Subhead, Toggle } from '@/ui/primitives';
@@ -47,7 +47,7 @@ export default function DataScreen() {
   const rows: { key: string; icon: IconName; name: string; size: string; saved: boolean; when: string; stale: boolean }[] = [
     { key: 'venues', icon: 'library', name: t('data.directory', { n: venues.length }), size: kb(venueBytes), saved: true, when: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? t('data.savedAgo', { ago: relativeAgo(cacheMeta.venues.fetchedAt, realNow), v: venueVersion }) : t('data.bundled', { v: venueVersion }), stale: venueSource === 'network' && cacheMeta.venues?.fetchedAt ? isStale(cacheMeta.venues.fetchedAt, realNow) : false },
     { key: 'maps', icon: 'map', name: t('data.maps'), size: kb(mapBytes()), saved: true, when: t('data.mapsWhen'), stale: false },
-    { key: 'crowd', icon: 'share', name: t('data.liveLevels'), size: crowd ? kb(JSON.stringify(crowd).length) : '—', saved: !!crowd, when: cacheMeta.crowd?.fetchedAt ? `${t('data.checkedAgo', { ago: relativeAgo(cacheMeta.crowd.fetchedAt, realNow) })}${crowd && !crowd.configured ? t('data.devRelay') : ''}` : t('data.notChecked'), stale: cacheMeta.crowd?.fetchedAt ? realNow - Date.parse(cacheMeta.crowd.fetchedAt) > 60 * 60_000 : false },
+    { key: 'crowd', icon: 'share', name: t('data.liveLevels'), size: crowd ? kb(JSON.stringify(crowd).length) : '—', saved: !!crowd, when: cacheMeta.crowd?.fetchedAt ? `${t('data.checkedAgo', { ago: relativeAgo(cacheMeta.crowd.fetchedAt, realNow) })}${crowd && !crowd.configured ? t('data.devRelay') : ''}` : t('data.notChecked'), stale: cacheMeta.crowd?.fetchedAt ? isStale(cacheMeta.crowd.fetchedAt, realNow, 1 / 24) : false },
     { key: 'checkins', icon: 'checkin', name: t('data.yourCheckIns', { n: myCheckIns.length }), size: kb(JSON.stringify(myCheckIns).length), saved: true, when: myCheckIns.some((c) => !c.synced) ? t('data.notSharedYet', { n: myCheckIns.filter((c) => !c.synced).length }) : t('data.allShared'), stale: false },
     { key: 'focus', icon: 'focus', name: t('data.focusLog', { n: focusLog.length }), size: kb(JSON.stringify(focusLog).length), saved: true, when: t('data.focusLogWhen'), stale: false },
   ];
@@ -68,10 +68,10 @@ export default function DataScreen() {
     const doReset = () => {
       resetAllData();
       applyDemoScenario('live');
-      actions.rehydrate();
+      hydrate();
     };
     if (Platform.OS === 'web') {
-      if (typeof globalThis.confirm === 'function' ? globalThis.confirm(t('data.resetWeb')) : true) doReset();
+      if (globalThis.confirm(t('data.resetWeb'))) doReset();
       return;
     }
     Alert.alert(t('data.reset'), t('data.resetBody'), [
@@ -81,7 +81,7 @@ export default function DataScreen() {
   };
 
   return (
-    <Screen title={t('data.nav')} largeTitle={t('data.nav')} subtitle={t('data.subtitle')} fallback="/" testID="data">
+    <Screen title={t('data.nav')} largeTitle={t('data.nav')} subtitle={t('data.subtitle')} testID="data">
       <Group style={{ marginTop: 8 }}>
         <Cell
           leading={
@@ -103,7 +103,7 @@ export default function DataScreen() {
           <Text style={[type.footnote, tabular, { marginTop: 8 }]}>{`${t('data.progressLine', { done: progress.done, total: progress.total })}${freeText ? ` · ${freeText}` : ''}`}</Text>
         </Group>
       ) : null}
-      {last ? <SectionFooter style={{ textAlign: 'center' }}>{`${t('data.lastResult', { crowd: last.crowd, dir: last.venues === 'no-source' ? t('data.bundledNoFeed') : last.venues, n: last.synced, s: last.synced === 1 ? '' : 's' })}${last.watchHits ? tn(last.watchHits, 'data.watchAlerts') : ''}`}</SectionFooter> : null}
+      {last ? <SectionFooter style={{ textAlign: 'center' }}>{`${t('data.lastResult', { crowd: last.crowd, dir: last.venues === 'no-source' ? t('data.bundledNoFeed') : last.venues })}${tn(last.synced, 'data.synced')}${last.watchHits ? tn(last.watchHits, 'data.watchAlerts') : ''}`}</SectionFooter> : null}
 
       {storageNotice ? (
         <Callout icon="alert" tone="amber" title={storageNotice.recovered ? t('data.storageAlmostFull') : t('data.storageFull')}>
@@ -121,11 +121,11 @@ export default function DataScreen() {
           <Cell key={r.key} icon={r.icon} iconColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} title={r.name} subtitle={`${r.size} · ${r.when}${r.stale ? t('data.olderThanExpected') : ''}`} value={r.saved ? (r.stale ? t('data.old') : t('data.saved')) : t('data.missing')} valueColor={r.saved ? (r.stale ? colors.amber : colors.green) : colors.ink2} last={i === rows.length - 1} />
         ))}
       </Group>
-      <SectionFooter>{t('data.footprint')}{freeText ? ` ${freeText[0].toUpperCase()}${freeText.slice(1)}.` : ''}</SectionFooter>
+      <SectionFooter>{t('data.footprint')}{freeText ? ` ${freeText}.` : ''}</SectionFooter>
 
       <SectionHeader>{t('data.sharing')}</SectionHeader>
       <Group>
-        <Toggle icon="share" label={t('data.shareLabel')} value={settings.shareCheckIns} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={t('data.shareHint')} />
+        <Toggle icon="share" label={t('data.shareLabel')} value={settings.shareCheckIns} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={t('privacy.anonymousHint')} />
         <Toggle icon="bell" label={t('data.notifications')} value={settings.notificationsEnabled} onChange={(v) => actions.patchSettings({ notificationsEnabled: v })} hint={t('data.notifHint')} last />
       </Group>
 

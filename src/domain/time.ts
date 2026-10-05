@@ -14,9 +14,6 @@ let clockOffsetMs = 0;
 export function setClockOffset(ms: number): void {
   clockOffsetMs = Number.isFinite(ms) ? ms : 0;
 }
-export function getClockOffset(): number {
-  return clockOffsetMs;
-}
 /** The app's notion of now (device clock + demo offset). Every time-based derivation uses this. */
 export function nowMs(): number {
   return Date.now() + clockOffsetMs;
@@ -47,20 +44,22 @@ export interface ZonedParts {
 }
 
 const WEEKDAY_INDEX: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-const fmtCache = new Map<string, Intl.DateTimeFormat>();
-function fmt(opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = JSON.stringify(opts);
-  let f = fmtCache.get(key);
-  if (!f) {
-    f = new Intl.DateTimeFormat('en-US', { timeZone: TZ, ...opts });
-    fmtCache.set(key, f);
-  }
-  return f;
+const PARTS_FMT = new Intl.DateTimeFormat('en-US', { timeZone: TZ, weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+const zpCache = new Map<number, ZonedParts>();
+/** Break an instant into local (NJ) calendar parts. Memoised per minute: the parts carry no seconds, and one ranking tick asks for the same minute hundreds of times. */
+export function zonedParts(epochMs: number): ZonedParts {
+  const key = Math.floor(epochMs / 60_000);
+  const hit = zpCache.get(key);
+  if (hit) return hit;
+  if (zpCache.size > 512) zpCache.clear();
+  const out = computeZonedParts(epochMs);
+  zpCache.set(key, out);
+  return out;
 }
 
-/** Break an instant into local (NJ) calendar parts. */
-export function zonedParts(epochMs: number): ZonedParts {
-  const parts = fmt({ weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(epochMs));
+function computeZonedParts(epochMs: number): ZonedParts {
+  const parts = PARTS_FMT.formatToParts(new Date(epochMs));
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
   const hour = Number(get('hour')) % 24; // some engines emit "24" at midnight
   const minute = Number(get('minute'));

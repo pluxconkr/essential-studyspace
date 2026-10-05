@@ -6,7 +6,7 @@
 import { AREA_BBOX } from '@/domain/areas';
 import { inBBox } from '@/domain/geo';
 import { isOpenAt } from '@/domain/hours';
-import { setClockOffset, zonedParts, zonedToEpoch } from '@/domain/time';
+import { setClockOffset, shiftDateKey, zonedParts, zonedToEpoch } from '@/domain/time';
 import { t } from '@/i18n';
 import type { CrowdReport, DemoScenario, Level, Venue } from '@/domain/types';
 import { actions, getState } from '@/store/appStore';
@@ -26,15 +26,9 @@ export function clockOffsetFor(scenario: DemoScenario, realNow: number = Date.no
   const p = zonedParts(realNow);
   let key = p.dateKey;
   // Finals and late-night are weekday stories; shift Saturday/Sunday to Monday.
-  if (p.weekday === 6) key = shift(key, 2);
-  else if (p.weekday === 0) key = shift(key, 1);
+  if (p.weekday === 6) key = shiftDateKey(key, 2);
+  else if (p.weekday === 0) key = shiftDateKey(key, 1);
   return zonedToEpoch(key, SCENARIO_CLOCK[scenario]) - realNow;
-}
-
-function shift(dateKey: string, days: number): string {
-  const [y, m, d] = dateKey.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d + days, 12));
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
 }
 
 /** Deterministic pseudo-random in [0,1) from a string, so the same scenario looks the same every time. */
@@ -84,8 +78,3 @@ export function restoreDemoScenario(): void {
   const s = getState().settings.demoScenario;
   if (s !== 'live') applyDemoScenario(s);
 }
-
-export function isDemoActive(): boolean {
-  return getState().settings.demoScenario !== 'live';
-}
-

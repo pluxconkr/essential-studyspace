@@ -64,5 +64,3 @@ export const kv = {
     mem.clear();
   },
 };
-
-export type KV = typeof kv;

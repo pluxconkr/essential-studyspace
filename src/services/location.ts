@@ -1,6 +1,6 @@
 /**
  * GPS works without a signal (satellites, not cell towers). We ask once, use the last
- * known fix instantly, then refine. The shelter list never waits on this.
+ * known fix instantly, then refine. The spot list never waits on this.
  */
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';

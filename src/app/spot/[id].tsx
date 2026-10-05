@@ -48,7 +48,7 @@ export default function SpotScreen() {
   const myCheckIns = useAppState((s) => s.myCheckIns);
   const scenario = useAppState((s) => s.settings.demoScenario);
   const row = useMemo(() => [...ranking.open, ...ranking.closed].find((r) => r.venue.venueId === id) ?? null, [ranking, id]);
-  const reports = useVenueReports(id ?? '');
+  const reports = useVenueReports(id);
   const zoneLevels = useMemo(() => (venue ? fuseZones({ venue, reports, now, phase }) : {}), [venue, reports, now, phase]);
   const details = useMemo(() => latestReportDetails(reports, now), [reports, now]);
 
@@ -72,15 +72,14 @@ export default function SpotScreen() {
   const safety = safetyFor(venue);
   const late = opensLate(venue, now);
 
+  const open = (url: string) => Linking.openURL(url).catch(() => {});
   const openMaps = () => {
     const q = encodeURIComponent(venue.address);
-    const url = Platform.select({ ios: `maps:0,0?q=${q}`, android: `geo:0,0?q=${q}`, default: `https://www.openstreetmap.org/?mlat=${venue.lat}&mlon=${venue.lng}#map=17/${venue.lat}/${venue.lng}` });
-    Linking.openURL(url ?? '').catch(() => {});
+    open(Platform.select({ ios: `maps:0,0?q=${q}`, android: `geo:0,0?q=${q}`, default: `https://www.openstreetmap.org/?mlat=${venue.lat}&mlon=${venue.lng}#map=17/${venue.lat}/${venue.lng}` }));
   };
-  const open = (url: string) => Linking.openURL(url).catch(() => {});
 
   return (
-    <Screen title={t('spot.nav')} largeTitle={venue.shortName} subtitle={`${venue.campus ? `${venue.campus} · ` : ''}${venue.town}${row ? ` · ${t('spot.minFromYou', { n: row.walkMin, from: ranking.ctx.originLabel })}` : ''}`} note={isDemo ? t('demo.reports') : undefined} fallback="/" testID="spot">
+    <Screen title={t('spot.nav')} largeTitle={venue.shortName} subtitle={`${venue.campus ? `${venue.campus} · ` : ''}${venue.town}${row ? ` · ${t('rank.reason.near', { n: row.walkMin, from: ranking.ctx.originLabel })}` : ''}`} note={isDemo ? t('demo.reports') : undefined} testID="spot">
       <Group padded style={{ marginTop: 8 }}>
         <LevelHero live={live} now={now} isDemo={isDemo} />
         {details ? (
@@ -100,7 +99,7 @@ export default function SpotScreen() {
       </Group>
       <View style={[styles.actions, fontScale > 1.3 && { flexDirection: 'column' }]}>
         <Button title={t('spot.checkInHere')} icon="checkin" onPress={() => router.push({ pathname: '/checkin/[id]', params: { id: venue.venueId } })} style={{ flex: 1 }} testID="spot-checkin" />
-        <Button title={t('spot.why')} icon="question" variant="tonal" onPress={() => router.push({ pathname: '/why/[id]', params: { id: venue.venueId } })} style={{ flex: 1 }} />
+        <Button title={t('why.nav')} icon="question" variant="tonal" onPress={() => router.push({ pathname: '/why/[id]', params: { id: venue.venueId } })} style={{ flex: 1 }} />
       </View>
 
       {state.exception ? (
@@ -109,9 +108,9 @@ export default function SpotScreen() {
         </Callout>
       ) : null}
 
-      <SectionHeader right={state.open ? (isAllDay(state.today) ? t('hours.open24') : toClose !== null && toClose <= 60 ? t('spot.closesIn', { when: formatIn(toClose * 60_000) }) : state.closesAt ? t('spot.until', { time: formatClockShort(state.closesAt) }) : undefined) : state.opensAt ? t('spot.opens', { when: formatShort(state.opensAt) }) : undefined}>{t('spot.hours')}</SectionHeader>
+      <SectionHeader right={state.open ? (isAllDay(state.today) ? t('hours.open24') : toClose !== null && toClose <= 60 ? t('spot.closesIn', { when: formatIn(toClose * 60_000) }) : state.closesAt ? t('spot.until', { time: formatClockShort(state.closesAt) }) : undefined) : state.opensAt ? t('now.opens', { when: formatShort(state.opensAt) }) : undefined}>{t('spot.hours')}</SectionHeader>
       <Group>
-        <Cell icon="clock" iconColor={state.open ? colors.green : colors.ink2} title={state.open ? t('spot.openNow') : t('spot.closedNow')} subtitle={isAllDay(state.today) ? t('spot.open24Today') : state.today ? t('spot.today', { hours: formatDayHours(state.today) }) : t('spot.closedToday')} />
+        <Cell icon="clock" iconColor={state.open ? colors.green : colors.ink2} title={state.open ? t('spot.openNow') : t('level.closedNow')} subtitle={isAllDay(state.today) ? t('spot.open24Today') : state.today ? t('spot.today', { hours: formatDayHours(state.today) }) : t('spot.closedToday')} />
         <Cell icon="shield" title={accessLabel(venue.access)} subtitle={venue.accessNote} last={week.length === 0} />
         <View style={{ paddingLeft: CELL_PAD }}>
           {week.map((w, i) => (

@@ -69,10 +69,10 @@ export default function MapScreen() {
   };
 
   return (
-    <Screen largeTitle={t('map.title')} subtitle={layer === 'late' ? t('map.openLate', { n: shown.length, area: AREA_NAME[area] }) : t('map.spots', { n: shown.length, area: AREA_NAME[area] })} note={scenario !== 'live' ? t('demo.reports') : undefined} testID="map">
+    <Screen largeTitle={t('tab.map')} subtitle={layer === 'late' ? t('map.openLate', { n: shown.length, area: AREA_NAME[area] }) : t('map.spots', { n: shown.length, area: AREA_NAME[area] })} note={scenario !== 'live' ? t('demo.reports') : undefined} testID="map">
       <View style={styles.picker}>
         <Segmented<Area>
-          label={t('map.area')}
+          label={t('prefs.area')}
           options={AREAS.map((a) => ({ value: a, label: AREA_SHORT[a] }))}
           value={area}
           onChange={(a) => {
@@ -112,7 +112,7 @@ export default function MapScreen() {
           <SectionHeader>{campus}</SectionHeader>
           <Group>
             {list.map((v, i) => (
-              <Cell key={v.venueId} icon={kindIcon(v.kind)} iconColor={levels[v.venueId]?.open ? colors.tint : colors.ink2} title={v.shortName} subtitle={<View><LevelLine live={levels[v.venueId]} now={now} compact />{/* second line */}<SectionFooter style={{ paddingHorizontal: 0, paddingTop: 2, paddingBottom: 0 }}>{sub(v)}</SectionFooter></View>} accessory="chevron" onPress={() => open(v)} accessibilityLabel={`${v.shortName}, ${sub(v)}`} last={i === list.length - 1} />
+              <Cell key={v.venueId} icon={kindIcon(v.kind)} iconColor={levels[v.venueId]?.open ? colors.tint : colors.ink2} title={v.shortName} subtitle={<View><LevelLine live={levels[v.venueId]} now={now} compact /><SectionFooter style={{ paddingHorizontal: 0, paddingTop: 2, paddingBottom: 0 }}>{sub(v)}</SectionFooter></View>} accessory="chevron" onPress={() => open(v)} accessibilityLabel={`${v.shortName}, ${sub(v)}`} last={i === list.length - 1} />
             ))}
           </Group>
         </View>

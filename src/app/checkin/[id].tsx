@@ -15,7 +15,7 @@ import { t } from '@/i18n';
 import { acquireLocation } from '@/services/location';
 import { postReport } from '@/services/crowdClient';
 import { scheduleSessionNotifications } from '@/services/notifications';
-import { actions, isOfflineNow, useAppState } from '@/store/appStore';
+import { actions, getState, isOfflineNow, useAppState } from '@/store/appStore';
 import { useLiveLevels, useRealNow, useVenue } from '@/store/derived';
 import { Screen, goBackOr } from '@/ui/Screen';
 import { noiseIcon } from '@/ui/icons';
@@ -52,8 +52,9 @@ export default function CheckInScreen() {
   const [note, setNote] = useState('');
 
   useEffect(() => {
-    if (locStatus === 'idle' || locStatus === 'granted') void acquireLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Read once at mount; a later status change must not request another fix.
+    const st = getState().locationStatus;
+    if (st === 'idle' || st === 'granted') void acquireLocation();
   }, []);
 
   if (!venue) {
@@ -101,7 +102,7 @@ export default function CheckInScreen() {
   const submit = async () => {
     if (level === null) return;
     await post(build());
-    goBackOr(router, '/');
+    goBackOr(router);
   };
 
   const submitAndStart = async () => {
@@ -118,7 +119,7 @@ export default function CheckInScreen() {
   };
 
   return (
-    <Screen title={t('checkin.nav')} largeTitle={t('checkin.title')} subtitle={venue.name} fallback="/" testID="checkin">
+    <Screen title={t('checkin.nav')} largeTitle={t('checkin.title')} subtitle={venue.name} testID="checkin">
       {venue.zones.length > 1 ? (
         <>
           <SectionHeader>{t('checkin.whereInBuilding')}</SectionHeader>
@@ -160,7 +161,7 @@ export default function CheckInScreen() {
       <SectionHeader>{t('checkin.presence')}</SectionHeader>
       <Group>
         <Cell icon={distanceM === null ? 'locationOff' : 'location'} iconColor={distanceM !== null && strength >= 0.85 ? colors.green : colors.ink2} title={presence} subtitle={t('checkin.presenceHint')} />
-        <Toggle icon="share" label={t('checkin.share')} value={share} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={offline ? t('checkin.shareOffline') : t('checkin.shareHint')} last />
+        <Toggle icon="share" label={t('checkin.share')} value={share} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={offline ? t('checkin.shareOffline') : t('privacy.anonymousHint')} last />
       </Group>
 
       <Group>

@@ -26,7 +26,7 @@ export default function ProfileScreen() {
   const chartWidth = Math.min(width - GUTTER * 2 - CELL_PAD * 2, 600);
 
   return (
-    <Screen title={t('profile.nav')} largeTitle={t('profile.nav')} subtitle={t('profile.subtitle', { n: stats.streak, time: formatDuration(stats.week.focusSeconds) })} fallback="/">
+    <Screen title={t('profile.nav')} largeTitle={t('profile.nav')} subtitle={t('profile.subtitle', { n: stats.streak, time: formatDuration(stats.week.focusSeconds) })}>
       <Group style={{ marginTop: 8 }}>
         <View style={{ paddingLeft: CELL_PAD }}>
           <KeyValue k={t('profile.focusedTime')} v={formatDuration(stats.week.focusSeconds)} />
@@ -62,10 +62,10 @@ export default function ProfileScreen() {
 
       <SectionHeader>{t('profile.settings')}</SectionHeader>
       <Group>
-        <Cell icon="settings" title={t('profile.preferences')} accessory="chevron" onPress={() => router.push('/prefs')} />
-        <Cell icon="calendar" title={t('profile.freeBlocks')} accessory="chevron" onPress={() => router.push('/blocks')} />
-        <Cell icon="download" title={t('profile.offlineData')} accessory="chevron" onPress={() => router.push('/data')} />
-        <Cell icon="shield" title={t('profile.privacy')} accessory="chevron" onPress={() => router.push('/privacy')} last />
+        <Cell icon="settings" title={t('prefs.nav')} accessory="chevron" onPress={() => router.push('/prefs')} />
+        <Cell icon="calendar" title={t('blocks.nav')} accessory="chevron" onPress={() => router.push('/blocks')} />
+        <Cell icon="download" title={t('data.nav')} accessory="chevron" onPress={() => router.push('/data')} />
+        <Cell icon="shield" title={t('privacy.nav')} accessory="chevron" onPress={() => router.push('/privacy')} last />
       </Group>
     </Screen>
   );

@@ -24,5 +24,3 @@ export const files = {
     return Number.POSITIVE_INFINITY;
   },
 };
-
-export type Files = typeof files;

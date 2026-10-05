@@ -34,7 +34,7 @@ External APIs: 0 · API keys needed by the phone: 0 · Server functions: 1.
 
 ## Stack
 
-Expo SDK 57 · expo-router · React Native 0.86 · TypeScript. Local storage is `expo-sqlite/kv-store` (synchronous reads, so the first frame renders from disk) plus `expo-file-system` for a downloaded directory; web falls back to localStorage. Map: `react-native-svg` drawing simplified OSM lines (≈ 140 KB for four areas) — no tiles, no map SDK, no API key. Clock: `America/New_York` via Intl, so library hours are library time whatever the phone is set to. Local notifications for block changes and watched spots.
+Expo SDK 57 · expo-router · React Native 0.86 · TypeScript. Local storage is `expo-sqlite/kv-store` (synchronous reads, so the first frame renders from disk) plus `expo-file-system` for a downloaded directory; web falls back to localStorage. Map: `react-native-svg` drawing simplified OSM lines (≈ 140 KB for four areas) — no tiles, no map SDK, no API key. Clock: `America/New_York` via Intl, so library hours are library time whatever the phone is set to. Local notifications for block changes and watched spots. English and Spanish follow the device language (`src/i18n`); every string in the app goes through one dictionary.
 
 Same design system as the sibling project `nmi-typhoon-watch`: native iOS grouped-list idiom, one accent, three semantic colours (navy information · red Packed/Full · green Empty/Chill; amber for Filling, closing soon and stale data), no shadows, 44 pt targets, body ≥ 15 pt, tabular numerals, no spinners, every cached thing time-stamped, demo data labelled wherever it appears.
 
@@ -42,7 +42,7 @@ Same design system as the sibling project `nmi-typhoon-watch`: native iOS groupe
 
 ```bash
 npm install
-cp .env.example .env        # optional: CROWD_STORE_URL/TOKEN for a persistent relay
+cp .env.example .env.local  # optional: CROWD_STORE_URL/TOKEN for a persistent relay (docs/backend-setup.md)
 npx expo start              # press i / a / w
 ```
 
@@ -53,7 +53,8 @@ Everything works in Expo Go. The relay works out of the box on the Metro dev ser
 ```bash
 npm run typecheck   # tsc --noEmit
 npm run lint        # expo lint
-npm test            # jest: levels & fusion, hours & time zone (DST), ranking, timer, focus stats, bundled data, crowd relay, storage guard, screen smoke tests (zero network)
+npm test            # jest: levels & fusion, hours & time zone (DST), ranking, timer, focus stats, bundled data, crowd relay, storage guard, refresh policy, Phase 1 gaps, i18n dictionaries, screen smoke tests (zero network)
+npx expo-doctor     # 21/21
 ```
 
 Manual acceptance procedures T1–T9, the six-state matrix and the demo script are in [docs/QA.md](docs/QA.md).
@@ -62,36 +63,13 @@ Manual acceptance procedures T1–T9, the six-state matrix and the demo script a
 
 Identifiers: iOS `com.27363.studyspace`, Android `com.tstst.studyspace` (see `app.json`). Profiles live in `eas.json`. Commands below use EAS CLI 16 or newer (`npm i -g eas-cli`).
 
-**1. Link the project (once)**
+**1. Deploy the relay and set the three environment values:** [docs/backend-setup.md](docs/backend-setup.md). Repeat the `eas env:set` lines with `--environment preview` and `--environment development` for those profiles. Optional directory feed (JSON shaped like `assets/data/venues.json`):
 
 ```sh
-eas login
-eas init            # writes extra.eas.projectId into app.json
-```
-
-**2. Deploy the relay** (the only server code: `src/app/api/crowd+api.ts`). Create a free Upstash Redis database and copy its REST URL and token. EAS Hosting reads server variables from the EAS environment, not from `.env.local`.
-
-```sh
-eas env:set --name CROWD_STORE_URL --value https://<db>.upstash.io --environment production --visibility sensitive
-eas env:set --name CROWD_STORE_TOKEN --value <token> --environment production --visibility sensitive
-
-npx expo export --platform web
-eas deploy --prod --environment production      # prints https://<name>.expo.app
-```
-
-Check it: `curl "https://<name>.expo.app/api/crowd?venues=alexander-library"` should answer `{"ok":true,"configured":true,"storage":"redis",...}`.
-
-**3. Point the app at it.** `EXPO_PUBLIC_*` values are inlined into the app at build time.
-
-```sh
-eas env:set --name EXPO_PUBLIC_CROWD_URL --value https://<name>.expo.app/api/crowd --environment production --visibility plaintext
-# optional directory feed (JSON shaped like assets/data/venues.json)
 eas env:set --name EXPO_PUBLIC_VENUES_URL --value https://<host>/nj-study-spots.json --environment production --visibility plaintext
 ```
 
-Repeat step 3 with `--environment preview` and `--environment development` for those profiles.
-
-**4. Builds**
+**2. Builds**
 
 ```sh
 eas build --profile development --platform ios            # dev build for a real iPhone (notifications, T1–T9)
@@ -106,7 +84,7 @@ eas submit --profile production --platform android        # Play Console
 
 Offline data → **Demo & testing** → Live / Finals / Quiet / Late night. A scenario shifts the app clock (3 PM, 9:30 AM or 11:35 PM on a weekday) and injects simulated reports so the ranking, the closing-soon logic and the finals exception can be shown at any time of day. Demo reports are labelled wherever they appear and are never uploaded. "Simulate no signal" shows the OFFLINE banner and blocks all network calls; the real test is airplane mode.
 
-Deep links do the same: `studyspace://?demo=finals` (also `quiet`, `late`, `live`), `studyspace://map?area=newark`, `studyspace://spot/alexander-library`. On the iOS Simulator with Metro running: `xcrun simctl openurl booted "exp://127.0.0.1:8081/--/map?area=hoboken"`.
+Deep links for every scenario, area and spot: [docs/QA.md § Deep links](docs/QA.md#deep-links).
 
 ## Data and licences
 
@@ -125,9 +103,14 @@ src/data/           local storage (kv + files, with .web.ts fallbacks), reposito
 src/services/       network state, crowd relay client, refresh orchestration, notifications, GPS, demo scenarios
 src/store/          useSyncExternalStore app store + derived hooks (live levels, ranking, session, stats)
 src/ui/             theme tokens, icons, primitives, level & session widgets, SVG area map
-assets/data/        bundled directory (17 venues), stations, four area maps
+src/i18n/           English and Spanish dictionaries, t()/tn() helpers (device language at boot)
+assets/data/        bundled directory (19 venues), stations, four area maps
+assets/locales/     iOS display name and permission strings per language
 __tests__/          unit + screen smoke tests (jest-expo)
 docs/QA.md          acceptance procedures T1–T9, state matrix, demo script
 docs/venue-sources.md  where every hour and coordinate came from
+docs/backend-setup.md  the three values to supply and how to verify each step
+docs/perf.md        bundle, render and startup baseline, what changed and what was left alone
+docs/design.md      design direction, type scale, component rules, audit
+docs/gap-analysis.md  spec vs app, item by item
 ```
-# essential-studyspace
