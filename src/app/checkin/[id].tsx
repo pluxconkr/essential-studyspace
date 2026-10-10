@@ -8,18 +8,17 @@ import { StyleSheet, View } from 'react-native';
 
 import { haversineM, formatDistance } from '@/domain/geo';
 import { newId } from '@/domain/ids';
-import { ALL_LEVELS, levelBlurb, levelLabel, proofStrength } from '@/domain/levels';
+import { proofStrength } from '@/domain/levels';
 import { nowIso, nowMs } from '@/domain/time';
 import type { Amenity, CheckIn, Level, NoiseReport, Session } from '@/domain/types';
 import { t } from '@/i18n';
 import { acquireLocation } from '@/services/location';
-import { postReport } from '@/services/crowdClient';
 import { scheduleSessionNotifications } from '@/services/notifications';
+import { submitCheckIn } from '@/services/refresh';
 import { actions, getState, isOfflineNow, useAppState } from '@/store/appStore';
 import { useLiveLevels, useRealNow, useVenue } from '@/store/derived';
 import { Screen, goBackOr } from '@/ui/Screen';
-import { noiseIcon } from '@/ui/icons';
-import { LevelBars } from '@/ui/level-widgets';
+import { LevelRows, ZonePicker } from '@/ui/level-widgets';
 import { Button, Callout, Cell, Field, Group, SectionFooter, SectionHeader, Segmented, Toggle } from '@/ui/primitives';
 import { colors } from '@/ui/theme';
 
@@ -50,6 +49,7 @@ export default function CheckInScreen() {
   const [noise, setNoise] = useState<NoiseReport | null>(null);
   const [avail, setAvail] = useState<Amenity[]>([]);
   const [note, setNote] = useState('');
+  const [remote, setRemote] = useState(false);
 
   useEffect(() => {
     // Read once at mount; a later status change must not request another fix.
@@ -76,8 +76,13 @@ export default function CheckInScreen() {
         ? t('checkin.gettingFix')
         : `${t('checkin.distance', { distance: formatDistance(distanceM), spot: venue.shortName })}${strength >= 0.85 ? t('checkin.verified') : t('checkin.unverified')}`;
 
+  // Without a fix, or far from the door, the student may say so; the report is then weighed as hearsay.
+  const unconfirmed = distanceM === null || distanceM > 300;
+  const isRemote = remote && unconfirmed;
+
   const build = (): CheckIn => ({
     checkInId: newId('ci'),
+    kind: isRemote ? 'remote' : 'live',
     venueId: venue.venueId,
     zoneId,
     level: level as Level,
@@ -91,24 +96,16 @@ export default function CheckInScreen() {
     shownLevel: levels[venue.venueId]?.open ? levels[venue.venueId].level : null,
   });
 
-  const post = async (ci: CheckIn) => {
-    actions.addCheckIn(ci);
-    if (share && !offline && !demo) {
-      const r = await postReport(ci);
-      if (r !== 'failed') actions.markCheckInsSynced([ci.checkInId]);
-    }
-  };
-
   const submit = async () => {
     if (level === null) return;
-    await post(build());
+    await submitCheckIn(build());
     goBackOr(router);
   };
 
   const submitAndStart = async () => {
     if (level === null) return;
     const ci = build();
-    await post(ci);
+    await submitCheckIn(ci);
     if (!session) {
       const now = nowMs();
       const s: Session = { sessionId: newId('s', now), venueId: venue.venueId, zoneId, shapeId: 'p50', startedAt: new Date(now).toISOString(), pausedAt: null, pausedMs: 0, endedAt: null, goals: [], checkInId: ci.checkInId };
@@ -120,23 +117,11 @@ export default function CheckInScreen() {
 
   return (
     <Screen title={t('checkin.nav')} largeTitle={t('checkin.title')} subtitle={venue.name} testID="checkin">
-      {venue.zones.length > 1 ? (
-        <>
-          <SectionHeader>{t('checkin.whereInBuilding')}</SectionHeader>
-          <Group>
-            <Cell icon="pin" title={t('checkin.wholeBuilding')} accessory={zoneId === null ? 'check' : 'none'} onPress={() => setZoneId(null)} accessibilityRole="button" accessibilityState={{ selected: zoneId === null }} />
-            {venue.zones.map((z, i) => (
-              <Cell key={z.zoneId} icon={noiseIcon(z.noise)} title={z.name} subtitle={z.floor} accessory={zoneId === z.zoneId ? 'check' : 'none'} onPress={() => setZoneId(z.zoneId)} accessibilityRole="button" accessibilityState={{ selected: zoneId === z.zoneId }} last={i === venue.zones.length - 1} />
-            ))}
-          </Group>
-        </>
-      ) : null}
+      <ZonePicker venue={venue} zoneId={zoneId} onChange={setZoneId} />
 
       <SectionHeader>{t('checkin.howCrowded')}</SectionHeader>
       <Group>
-        {ALL_LEVELS.map((l, i) => (
-          <Cell key={l} leading={<LevelBars level={l} size="md" />} title={levelLabel(l)} subtitle={levelBlurb(l)} accessory={level === l ? 'check' : 'none'} onPress={() => setLevel(l)} accessibilityRole="button" accessibilityState={{ selected: level === l }} last={i === ALL_LEVELS.length - 1} testID={`level-${l}`} />
-        ))}
+        <LevelRows level={level} onChange={setLevel} testIDPrefix="level-" />
       </Group>
       <SectionFooter>{t('checkin.onlyLevel')}</SectionFooter>
 
@@ -161,16 +146,18 @@ export default function CheckInScreen() {
       <SectionHeader>{t('checkin.presence')}</SectionHeader>
       <Group>
         <Cell icon={distanceM === null ? 'locationOff' : 'location'} iconColor={distanceM !== null && strength >= 0.85 ? colors.green : colors.ink2} title={presence} subtitle={t('checkin.presenceHint')} />
+        {unconfirmed ? <Toggle icon="locationOff" label={t('checkin.remote')} value={remote} onChange={setRemote} hint={t('checkin.remoteHint')} /> : null}
         <Toggle icon="share" label={t('checkin.share')} value={share} onChange={(v) => actions.patchSettings({ shareCheckIns: v })} hint={offline ? t('checkin.shareOffline') : t('privacy.anonymousHint')} last />
       </Group>
 
       <Group>
+        <Cell icon="history" title={t('report.entry')} accessory="chevron" onPress={() => router.push({ pathname: '/report/[id]', params: { id: venue.venueId } })} />
         <Cell icon="map" title={t('checkin.notHere')} accessory="chevron" onPress={() => router.replace('/map')} last />
       </Group>
 
       <View style={styles.actions}>
-        <Button title={t('checkin.post')} icon="checkin" disabled={level === null} onPress={() => void submit()} testID="checkin-post" />
-        <Button title={session ? t('checkin.postReturn') : t('checkin.postStart')} icon="focus" variant="tonal" disabled={level === null} onPress={() => void submitAndStart()} />
+        <Button title={isRemote ? t('checkin.postRemote') : t('checkin.post')} icon="checkin" disabled={level === null} onPress={() => void submit()} testID="checkin-post" />
+        {isRemote ? null : <Button title={session ? t('checkin.postReturn') : t('checkin.postStart')} icon="focus" variant="tonal" disabled={level === null} onPress={() => void submitAndStart()} />}
       </View>
     </Screen>
   );

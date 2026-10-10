@@ -76,6 +76,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="spot/[id]" />
           <Stack.Screen name="checkin/[id]" />
+          <Stack.Screen name="report/[id]" />
           <Stack.Screen name="profile" />
           <Stack.Screen name="prefs" />
           <Stack.Screen name="blocks" />

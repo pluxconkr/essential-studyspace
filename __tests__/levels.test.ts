@@ -1,6 +1,6 @@
-import { typicalPct } from '@/domain/curve';
+import { PATTERN_MIN, learnedBucket, typicalPct } from '@/domain/curve';
 import { FUSION, LEVEL_BOUNDS, STRONG_PROOF, bucket, confidenceText, dedupeReports, fuse, fuseZones, latestReportDetails, levelText, predictAt, proofStrength, recencyDecay } from '@/domain/levels';
-import type { CrowdReport, Venue } from '@/domain/types';
+import type { CrowdReport, PatternBucket, Venue, VenuePattern } from '@/domain/types';
 import venues from '@/assets/data/venues.json';
 
 const alexander = (venues.venues as unknown as Venue[]).find((v) => v.venueId === 'alexander-library')!;
@@ -116,7 +116,7 @@ describe('fusion', () => {
     const zones = fuseZones({ venue: alexander, reports, now: NOW });
     expect(Object.keys(zones)).toEqual([z]); // the 100-min report in zone 2 is past the 90-min window
     expect(zones[z].level).toBe(4);
-    expect(latestReportDetails(reports, NOW)).toEqual({ noise: 0, amenities: ['outlets'], at: reports[0].at });
+    expect(latestReportDetails(reports, NOW)).toEqual({ noise: 0, amenities: ['outlets'], at: reports[0].at, kind: 'live' });
     expect(latestReportDetails([rep(1, 5)], NOW)).toBeNull();
   });
 
@@ -137,5 +137,75 @@ describe('fusion', () => {
     const later = predictAt(alexander, full, NOW + 3 * 3600_000, NOW);
     expect(soon.level).toBeGreaterThanOrEqual(later.level);
     expect(predictAt(alexander, full, Date.parse('2026-10-10T08:00:00Z'), NOW).open).toBe(false);
+  });
+});
+
+const emptyPattern = (): VenuePattern => {
+  const row = () => Array.from({ length: 24 }, (): PatternBucket => ({ n: 0, days: 0, pct: null }));
+  return { wk: row(), sa: row(), su: row() };
+};
+// NOW is a Wednesday at 2 PM: the weekday bucket for hour 14.
+const learnedAt14 = (n: number, days: number, pct = 0.9): VenuePattern => {
+  const p = emptyPattern();
+  p.wk[14] = { n, days, pct };
+  return p;
+};
+const remoteRep = (level: CrowdReport['level'], min: number): CrowdReport => ({ ...rep(level, min, 0.25), kind: 'remote' });
+
+describe('learned baseline', () => {
+  test('a bucket counts once it has enough reports from enough days; the term multiplier no longer applies', () => {
+    expect(learnedBucket(learnedAt14(PATTERN_MIN.reports, PATTERN_MIN.days), NOW)?.pct).toBe(0.9);
+    expect(learnedBucket(learnedAt14(PATTERN_MIN.reports - 1, PATTERN_MIN.days), NOW)).toBeNull();
+    expect(learnedBucket(learnedAt14(PATTERN_MIN.reports, PATTERN_MIN.days - 1), NOW)).toBeNull();
+    expect(learnedBucket(null, NOW)).toBeNull();
+    expect(typicalPct(alexander, NOW, 'finals', learnedAt14(5, 3))).toBe(0.9);
+    expect(typicalPct(alexander, NOW, 'finals', learnedAt14(4, 3))).toBe(typicalPct(alexander, NOW, 'finals'));
+    // Saturday 10 Oct 2026 2 PM: a weekday bucket must not answer for a weekend.
+    expect(learnedBucket(learnedAt14(5, 3), Date.parse('2026-10-10T18:00:00Z'))).toBeNull();
+  });
+
+  test('with no live report the level comes from the learned pattern and says so', () => {
+    const l = fuse({ venue: alexander, reports: [], now: NOW, pattern: learnedAt14(5, 3, 0.8) });
+    expect(l.level).toBe(3);
+    expect(l.confidence).toBe('none');
+    expect(l.prior).toBe('reports');
+    expect(l.remote).toBe(0);
+    expect(confidenceText(l, NOW)).toBe('Typical pattern · from student reports');
+    expect(predictAt(alexander, l, NOW + 20 * 60_000, NOW, 'regular', learnedAt14(5, 3, 0.8)).level).toBe(3);
+  });
+});
+
+describe('reports from students not at the spot', () => {
+  test('alone they move the level but confidence stays low and the line says where they came from', () => {
+    const l = fuse({ venue: alexander, reports: [remoteRep(4, 3), remoteRep(4, 5)], now: NOW });
+    expect(l.level).toBe(4);
+    expect(l.confidence).toBe('low');
+    expect(l.remote).toBe(2);
+    expect(l.reports).toBe(2);
+    expect(confidenceText(l, NOW)).toBe('2 reports, 3 min ago · not at the spot');
+  });
+
+  test('one report from the spot replaces them entirely', () => {
+    const l = fuse({ venue: alexander, reports: [remoteRep(4, 3), rep(1, 10)], now: NOW });
+    expect(l.remote).toBe(0);
+    expect(l.reports).toBe(1);
+    expect(l.level).toBe(1);
+    expect(l.confidence).toBe('medium');
+    expect(confidenceText(l, NOW)).not.toMatch(/not at the spot/);
+  });
+
+  test('an earlier-visit report never makes a zone row', () => {
+    const z = alexander.zones[0].zoneId;
+    expect(fuseZones({ venue: alexander, reports: [{ ...rep(4, 10), zoneId: z, kind: 'past' }], now: NOW })).toEqual({});
+    expect(Object.keys(fuseZones({ venue: alexander, reports: [{ ...rep(4, 10), zoneId: z }], now: NOW }))).toEqual([z]);
+  });
+
+  test('past reports never reach the live level or the details line', () => {
+    const past: CrowdReport = { ...rep(4, 30), kind: 'past', noise: 3 };
+    const l = fuse({ venue: alexander, reports: [past], now: NOW });
+    expect(l.reports).toBe(0);
+    expect(l.confidence).toBe('none');
+    expect(latestReportDetails([past], NOW)).toBeNull();
+    expect(latestReportDetails([{ ...remoteRep(2, 4), noise: 1 }], NOW)?.kind).toBe('remote');
   });
 });

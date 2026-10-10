@@ -1,4 +1,4 @@
-# Acceptance tests (T1–T9)
+# Acceptance tests (T1–T10)
 
 All must pass on a physical phone before release. The point of T2 is a screenshot: airplane-mode icon + empty network log + working app in one frame — the whole offline claim.
 
@@ -15,6 +15,7 @@ Preparation: install a development build (or Expo Go), open the app once online 
 | T7 | Wrong hours never pass silently | Set the device clock to a Monday 11:35 PM → Now tab | Spots closing at midnight show "closes in 25 min" (amber), Alexander shows as open past midnight, closed spots show "Opens Tue 8:00 AM". Nothing claims to be open that is not. |
 | T8 | Honest confidence | Fresh install, post ONE check-in at a spot you are 500 m away from | The level is published as that level but labelled "1 report, just now"; after 50 minutes it reads "unverified" and the range widens; after 3 hours it is gone and the spot reads "Typical pattern · no live reports". |
 | T9 | Timer survives sleep | Start a 25/5 session → lock the phone for 27 minutes → unlock | The ring shows the break of block 1 with the right seconds; a local notification fired at 25:00. Pause for 5 minutes and resume: the remaining time has not moved. |
+| T10 | Student reports | Airplane mode ON → Spot → "Were you here earlier?" → yesterday, 2 PM, Packed → post; then Check in → "I'm not at the spot" → Chill → post; airplane mode OFF → Offline data → Refresh | Offline data shows "Shared 2 check-ins" after the refresh; the spot's honesty line reads "1 report, just now · not at the spot" and is replaced by that check-in's own line ("1 report, just now") as soon as anyone at the spot checks in; the earlier visit never changes "right now"; once an hour has 5 reports over 3 days it is underlined in the typical-day chart and the footer counts them. |
 
 ## State matrix — every screen must handle all six
 
@@ -25,7 +26,7 @@ Preparation: install a development build (or Expo Go), open the app once online 
 | Offline · no cache | Bundled directory + typical pattern labelled as such | "Check your connection" and nothing else |
 | Online · cache expired | Render + "older than expected" on the Offline data screen + one-tap refresh | Old levels presented as current |
 | No reports (quiet day) | Range from the typical pattern, "no live reports" | Fake precision, empty state |
-| Low storage | Keep prefs / focus log / directory / maps, drop cached levels and old check-ins first, say what was dropped | Silent failure, crash |
+| Low storage | Keep prefs / focus log / directory / maps, drop the cached typical patterns, then cached levels, then old check-ins, say what was dropped | Silent failure, crash |
 
 ## Demo script (judging video)
 

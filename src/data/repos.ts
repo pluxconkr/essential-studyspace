@@ -15,6 +15,7 @@ import type {
   CrowdSnapshot,
   DroppedItem,
   FocusEntry,
+  PatternSnapshot,
   Prefs,
   Session,
   Settings,
@@ -33,6 +34,7 @@ export const KEYS = {
   settings: 'settings:v1',
   checkins: 'checkins:v1',
   crowd: 'crowd:v1',
+  pattern: 'pattern:v1',
   session: 'session:v1',
   focusLog: 'focusLog:v1',
   watches: 'watches:v1',
@@ -69,14 +71,11 @@ export function isLowOnSpace(): boolean {
   return Number.isFinite(free) && free < LOW_SPACE_BYTES;
 }
 
-/** Give up re-downloadable data first (crowd cache), then older own check-ins. Prefs, session, focus log, watches are never dropped. */
+/** Give up re-downloadable data first (pattern and crowd caches), then older own check-ins. Prefs, session, focus log, watches are never dropped. */
 export function dropLowPriority(): DroppedItem[] {
   const dropped: DroppedItem[] = [];
-  if (kv.get<CrowdSnapshot>(KEYS.crowd) != null) {
-    kv.remove(KEYS.crowd);
-    cacheMetaRepo.remove('crowd');
-    dropped.push('crowd-cache');
-  }
+  patternRepo.drop(dropped);
+  crowdRepo.drop(dropped);
   const cis = kv.get<CheckIn[]>(KEYS.checkins) ?? [];
   if (cis.length > LOW_SPACE_CHECKIN_KEEP) {
     kv.set(KEYS.checkins, pruneCheckIns(cis).slice(0, LOW_SPACE_CHECKIN_KEEP));
@@ -243,35 +242,51 @@ export function pruneCheckIns(list: CheckIn[], now: number = Date.now()): CheckI
 
 const keepNewestCheckIns = (list: CheckIn[]) => list.slice(0, LOW_SPACE_CHECKIN_KEEP);
 
+/** Records saved before report kinds existed were all made at the spot. */
+const withKind = (list: CheckIn[] | null) => (list ?? []).map((c) => (c.kind ? c : { ...c, kind: 'live' as const }));
+
 export const checkInRepo = {
   getAll(): CheckIn[] {
-    return kv.get<CheckIn[]>(KEYS.checkins) ?? [];
+    return withKind(kv.get<CheckIn[]>(KEYS.checkins));
   },
   add(ci: CheckIn, now: number = Date.now()): CheckIn[] {
-    return guardedUpdate<CheckIn[]>(KEYS.checkins, (prev) => pruneCheckIns([ci, ...(prev ?? []).filter((c) => c.checkInId !== ci.checkInId)], now), keepNewestCheckIns);
+    return guardedUpdate<CheckIn[]>(KEYS.checkins, (prev) => pruneCheckIns([ci, ...withKind(prev).filter((c) => c.checkInId !== ci.checkInId)], now), keepNewestCheckIns);
   },
   markSynced(ids: string[]): CheckIn[] {
     const set = new Set(ids);
-    return guardedUpdate<CheckIn[]>(KEYS.checkins, (prev) => (prev ?? []).map((c) => (set.has(c.checkInId) ? { ...c, synced: true } : c)), keepNewestCheckIns);
+    return guardedUpdate<CheckIn[]>(KEYS.checkins, (prev) => withKind(prev).map((c) => (set.has(c.checkInId) ? { ...c, synced: true } : c)), keepNewestCheckIns);
   },
   replaceAll(list: CheckIn[]): CheckIn[] {
     return guardedSet(KEYS.checkins, pruneCheckIns(list), keepNewestCheckIns);
   },
 };
 
-// ---------- Crowd snapshot (the only re-downloadable cache) ----------
+// ---------- Re-downloadable caches: crowd snapshot and learned pattern ----------
 
-export const crowdRepo = {
-  get(): CrowdSnapshot | null {
-    return kv.get<CrowdSnapshot>(KEYS.crowd);
-  },
-  /** First thing given up when space runs out, so a failed write is reported, not retried. */
-  set(s: CrowdSnapshot): boolean {
-    if (kv.set(KEYS.crowd, s)) return true;
-    reportStorageNotice(['crowd-cache'], true);
-    return false;
-  },
-};
+/** First things given up when space runs out, so a failed write is reported, not retried. */
+function cacheRepo<T>(key: string, asset: AssetKey, item: DroppedItem) {
+  return {
+    get(): T | null {
+      return kv.get<T>(key);
+    },
+    set(v: T): boolean {
+      if (kv.set(key, v)) return true;
+      reportStorageNotice([item], true);
+      return false;
+    },
+    drop(into: DroppedItem[]): void {
+      if (kv.get<T>(key) != null) {
+        kv.remove(key);
+        cacheMetaRepo.remove(asset);
+        into.push(item);
+      }
+    },
+  };
+}
+
+export const crowdRepo = cacheRepo<CrowdSnapshot>(KEYS.crowd, 'crowd', 'crowd-cache');
+/** The learned baseline from the relay. */
+export const patternRepo = cacheRepo<PatternSnapshot>(KEYS.pattern, 'pattern', 'pattern-cache');
 
 // ---------- Session & focus log ----------
 

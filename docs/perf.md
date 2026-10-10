@@ -62,3 +62,5 @@ After the anti-slop pass that followed (dead code, unused props and tokens, dupl
 ### Rejected after a device check
 
 Removing the root remount on a Dynamic Type change (`<Stack key={fontScale}>` in `src/app/_layout.tsx`). The profiling pass argued that Fabric re-measures mounted text natively. On the simulator (Expo Go, SDK 57) it does not: with the key removed, already-mounted Spot and Map screens kept their old text measurements and clipped every line until remounted. The remount stays; it only runs when the user changes the text size.
+
+Student reports (2026-10-10): the learned baseline is one extra download, `GET /api/pattern` (about 40 KB for 19 venues), at most every six hours, cached under its own key and the first thing dropped when storage runs low; levels and ranking read it from the store, so the per-tick cost is unchanged.

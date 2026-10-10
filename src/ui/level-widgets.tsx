@@ -3,15 +3,17 @@
  * and the typical-day curve. Reference points: Apple Weather hourly strip, Reminders rows.
  */
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Line, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 
-import { typicalPct, type TermPhase } from '@/domain/curve';
+import { learnedBucket, type TermPhase, typicalPct } from '@/domain/curve';
 import { hoursOn } from '@/domain/hours';
-import { LEVELS, confidenceText, levelBlurb, levelText } from '@/domain/levels';
+import { ALL_LEVELS, LEVELS, confidenceText, levelBlurb, levelLabel, levelText } from '@/domain/levels';
 import { hhmmToMinutes, zonedParts } from '@/domain/time';
-import type { Level, LiveLevel, Venue } from '@/domain/types';
+import type { Level, LiveLevel, Venue, VenuePattern } from '@/domain/types';
 import { t } from '@/i18n';
 
+import { noiseIcon } from './icons';
+import { Cell, Group, SectionHeader } from './primitives';
 import { colors, fonts, tabular, toneColor, type } from './theme';
 
 export function levelTone(level: Level): 'green' | 'amber' | 'red' {
@@ -69,7 +71,7 @@ export function LevelHero({ live, now, isDemo }: { live: LiveLevel; now: number;
 }
 
 /** Typical day as 24 bars with the current hour and an optional arrival marker. Closed hours are empty. */
-export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }: { venue: Venue; now: number; arrivalAt?: number | null; phase: TermPhase; width: number; height?: number }) {
+export function HourlyCurve({ venue, now, arrivalAt, phase, pattern = null, width, height = 96 }: { venue: Venue; now: number; arrivalAt?: number | null; phase: TermPhase; pattern?: VenuePattern | null; width: number; height?: number }) {
   const p = zonedParts(now);
   const day = hoursOn(venue, p.dateKey).hours;
   const open = day ? hhmmToMinutes(day.open) : null;
@@ -83,7 +85,7 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }
   const bars = Array.from({ length: 24 }, (_, h) => {
     const at = dayStart + h * 3600_000 + 30 * 60_000;
     const isOpen = open !== null && close !== null && h * 60 + 30 >= open && h * 60 + 30 < close;
-    return { h, pct: isOpen ? typicalPct(venue, at, phase) : 0, isOpen };
+    return { h, pct: isOpen ? typicalPct(venue, at, phase, pattern) : 0, isOpen, learned: isOpen && learnedBucket(pattern, at) !== null };
   });
   const arrivalHour = arrivalAt ? zonedParts(arrivalAt).hour + zonedParts(arrivalAt).minute / 60 : null;
   const nowX = padL + (p.minutesOfDay / 60) * bw;
@@ -93,7 +95,12 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }
         {bars.map((b) => {
           const hgt = Math.max(b.isOpen ? 2 : 0, b.pct * barH);
           const tone = b.pct < 0.45 ? 'green' : b.pct < 0.7 ? 'amber' : 'red';
-          return <Rect key={b.h} x={padL + b.h * bw + 1} y={4 + barH - hgt} width={bw - 2} height={hgt} rx={1.5} fill={b.isOpen ? toneColor[tone] : colors.fill} opacity={b.h === p.hour ? 1 : 0.55} />;
+          return (
+            <G key={b.h}>
+              <Rect x={padL + b.h * bw + 1} y={4 + barH - hgt} width={bw - 2} height={hgt} rx={1.5} fill={b.isOpen ? toneColor[tone] : colors.fill} opacity={b.h === p.hour ? 1 : 0.55} />
+              {b.learned ? <Rect x={padL + b.h * bw + 1} y={barH + 6} width={bw - 2} height={2} fill={colors.ink} /> : null}
+            </G>
+          );
         })}
         <Line x1={nowX} x2={nowX} y1={2} y2={barH + 6} stroke={colors.ink} strokeWidth={1.5} />
         {arrivalHour !== null && arrivalHour >= 0 && arrivalHour < 24 ? <Line x1={padL + arrivalHour * bw} x2={padL + arrivalHour * bw} y1={2} y2={barH + 6} stroke={colors.tint} strokeWidth={1.5} strokeDasharray="3 3" /> : null}
@@ -106,6 +113,7 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, width, height = 96 }
       <View style={styles.legend}>
         <Text style={type.caption}>{t('widgets.legendNow')}</Text>
         {arrivalHour !== null ? <Text style={[type.caption, { color: colors.tint }]}>{t('widgets.legendArrival')}</Text> : null}
+        {bars.some((b) => b.learned) ? <Text style={type.caption}>{t('widgets.legendLearned')}</Text> : null}
         <Text style={type.caption}>{t('widgets.legendClosed')}</Text>
       </View>
     </View>
@@ -141,3 +149,26 @@ const styles = StyleSheet.create({
   heroLabel: { ...type.display, ...tabular },
   legend: { flexDirection: 'row', gap: 12, marginTop: 2 },
 });
+
+/** "Where in the building" check list, shared by check-in and earlier-visit reports. Nothing for single-zone venues. */
+export function ZonePicker({ venue, zoneId, onChange }: { venue: Venue; zoneId: string | null; onChange: (z: string | null) => void }) {
+  if (venue.zones.length <= 1) return null;
+  return (
+    <>
+      <SectionHeader>{t('checkin.whereInBuilding')}</SectionHeader>
+      <Group>
+        <Cell icon="pin" title={t('checkin.wholeBuilding')} accessory={zoneId === null ? 'check' : 'none'} onPress={() => onChange(null)} accessibilityRole="button" accessibilityState={{ selected: zoneId === null }} />
+        {venue.zones.map((z, i) => (
+          <Cell key={z.zoneId} icon={noiseIcon(z.noise)} title={z.name} subtitle={z.floor} accessory={zoneId === z.zoneId ? 'check' : 'none'} onPress={() => onChange(z.zoneId)} accessibilityRole="button" accessibilityState={{ selected: zoneId === z.zoneId }} last={i === venue.zones.length - 1} />
+        ))}
+      </Group>
+    </>
+  );
+}
+
+/** The five level rows of a report form. */
+export function LevelRows({ level, onChange, testIDPrefix }: { level: Level | null; onChange: (l: Level) => void; testIDPrefix: string }) {
+  return ALL_LEVELS.map((l, i) => (
+    <Cell key={l} leading={<LevelBars level={l} size="md" />} title={levelLabel(l)} subtitle={levelBlurb(l)} accessory={level === l ? 'check' : 'none'} onPress={() => onChange(l)} accessibilityRole="button" accessibilityState={{ selected: level === l }} last={i === ALL_LEVELS.length - 1} testID={`${testIDPrefix}${l}`} />
+  ));
+}

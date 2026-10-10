@@ -68,6 +68,9 @@ export const en = {
   'level.low.other': '{n} reports, {ago} · unverified',
   'level.noneVenue': 'Venue estimate · no live reports',
   'level.noneTypical': 'Typical pattern · no live reports',
+  'level.noneLearned': 'Typical pattern · from student reports',
+  'level.lowRemote.one': '1 report, {ago} · not at the spot',
+  'level.lowRemote.other': '{n} reports, {ago} · not at the spot',
   'level.typicalShort': '{level} · typical pattern',
   'level.bars': '{level}, {n} of 5 bars',
   'noise.0': 'silent',
@@ -89,6 +92,7 @@ export const en = {
   'curve.at': '{day} at {time}',
   'curve.finals': ' Finals multiply it by {x}.',
   'curve.break': ' Break weeks multiply it by {x}.',
+  'curve.explainLearned': '{pct}% of a busy day, the average of {n} student reports over {days} days on {when}. A live report always outweighs it.',
 
   // ---- ranking ----
   'rank.seats': 'Seats at arrival × {w}',
@@ -295,6 +299,10 @@ export const en = {
   'spot.typicalDay': 'Typical day',
   'spot.declaredByVenue': 'Declared by the venue.',
   'spot.estimate': 'Estimate for a typical {kind}, not a measurement.',
+  'spot.learnedFooter.one': '1 underlined hour comes from {reports} student reports; the rest is an estimate.',
+  'spot.learnedFooter.other': '{n} underlined hours come from {reports} student reports; the rest is an estimate.',
+  'spot.notAtSpot': 'not at the spot',
+  'spot.kindPast': 'earlier visit',
   'spot.zones': 'Zones',
   'spot.seats': '{n} seats',
   'spot.accessibleSeats': '{n} accessible seats',
@@ -359,9 +367,26 @@ export const en = {
   'checkin.share': 'Share anonymously',
   'checkin.shareOffline': 'Uploads when back online',
   'checkin.notHere': 'Not here? Choose another spot',
+  'checkin.remote': "I'm not at the spot",
+  'checkin.remoteHint': 'Counts a little and is shown as a report from elsewhere; one check-in from the spot replaces it.',
+  'checkin.postRemote': 'Post report',
   'checkin.post': 'Post check-in',
   'checkin.postReturn': 'Post and return to session',
   'checkin.postStart': 'Post and start a session here',
+
+  // ---- Earlier visit ----
+  'report.entry': 'Were you here earlier? Add what you saw',
+  'report.nav': 'Earlier visit',
+  'report.title': 'What did you see?',
+  'report.when': 'When',
+  'report.hour': 'Hour',
+  'report.today': 'Today',
+  'report.yesterday': 'Yesterday',
+  'report.closedThatDay': 'Closed that day',
+  'report.noHoursYet': 'No hour of today has passed yet',
+  'report.level': 'How crowded was it?',
+  'report.post': 'Add to the pattern',
+  'report.footer': 'Shapes the typical pattern only; never shown as right now. No location is sent.',
 
   // ---- Why ----
   'why.nav': 'Why this ranking?',
@@ -493,6 +518,7 @@ export const en = {
   'data.storageFull': 'Storage is full — the last change could not be saved',
   'data.gaveUp': 'To make room the app gave up {what}. ',
   'data.kept': 'Your preferences, focus log and the directory are kept. Free some space, then refresh.',
+  'data.dropped.pattern': 'the cached typical patterns',
   'data.dropped.crowd': 'the cached live levels',
   'data.dropped.checkins': 'older check-ins (the newest 50 are kept)',
   'data.ok': 'OK',
@@ -511,6 +537,7 @@ export const en = {
   'data.allShared': 'all shared or sharing off',
   'data.focusLog': 'Focus log · {n} sessions',
   'data.focusLogWhen': 'student-owned · never leaves the phone',
+  'data.patterns': 'Typical patterns',
   'data.olderThanExpected': ' · older than expected',
   'data.saved': 'Saved',
   'data.old': 'Old',
@@ -544,7 +571,7 @@ export const en = {
   'privacy.shared': 'Shared',
   'privacy.anonymous': 'Anonymous check-ins',
   'privacy.anonymousHint': 'Spot, zone, level, noise, what was available, and the minute',
-  'privacy.relayFooter': 'Kept on the relay for 3 hours. No name, device id, note or location is sent.',
+  'privacy.relayFooter': 'Kept on the relay for 3 hours. No name, device id, note or location is sent. Earlier-visit and not-at-the-spot reports carry no location.',
   'privacy.neverShared': 'Never shared',
   'privacy.location': 'Location',
   'privacy.locationBody': 'Read once when you check in or open the map, compared with the spot, then dropped. Not stored.',
@@ -565,6 +592,7 @@ export const en = {
   'widgets.legendNow': '▍ now',
   'widgets.legendArrival': '┆ your arrival',
   'widgets.legendClosed': 'grey = closed',
+  'widgets.legendLearned': '▁ student reports',
 } as const;
 
 export type Key = keyof typeof en;

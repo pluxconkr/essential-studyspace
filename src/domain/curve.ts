@@ -6,7 +6,7 @@
 import { t } from '@/i18n';
 
 import { formatMinutesShort, zonedParts } from './time';
-import type { Venue, VenueKind } from './types';
+import type { DayType, PatternBucket, Venue, VenueKind, VenuePattern } from './types';
 
 export type TermPhase = 'regular' | 'finals' | 'break';
 
@@ -26,6 +26,36 @@ const WEEKEND: Record<VenueKind, number[]> = {
   cafe: [0, 0, 0, 0, 0, 0, 0.05, 0.2, 0.45, 0.7, 0.8, 0.75, 0.6, 0.5, 0.45, 0.4, 0.3, 0.2, 0.1, 0.05, 0, 0, 0, 0],
 };
 
+/** A learned bucket replaces the estimate once it holds this many reports from this many distinct days. */
+export const PATTERN_MIN = { reports: 5, days: 3 } as const;
+
+export const dayTypeOf = (weekday: number): DayType => (weekday === 0 ? 'su' : weekday === 6 ? 'sa' : 'wk');
+
+/** A bucket counts once it has met PATTERN_MIN. */
+const isLearned = (b: PatternBucket): b is PatternBucket & { pct: number } => b.pct !== null && b.n >= PATTERN_MIN.reports && b.days >= PATTERN_MIN.days;
+
+/** The learned bucket for an instant, or null while it has not met PATTERN_MIN. */
+export function learnedBucket(pattern: VenuePattern | null | undefined, at: number): (PatternBucket & { pct: number }) | null {
+  if (!pattern) return null;
+  const p = zonedParts(at);
+  const b = pattern[dayTypeOf(p.weekday)][p.hour];
+  return isLearned(b) ? b : null;
+}
+
+/** How many of the day's 24 buckets are learned for the day type of `at`, and the reports behind them. */
+export function learnedHours(pattern: VenuePattern | null | undefined, at: number): { hours: number; reports: number } {
+  if (!pattern) return { hours: 0, reports: 0 };
+  let hours = 0;
+  let reports = 0;
+  for (const b of pattern[dayTypeOf(zonedParts(at).weekday)]) {
+    if (isLearned(b)) {
+      hours += 1;
+      reports += b.n;
+    }
+  }
+  return { hours, reports };
+}
+
 /** Finals push every library toward full; breaks empty the campus. Capped at 1. */
 export const TERM_MULTIPLIER: Record<TermPhase, number> = { regular: 1, finals: 1.35, break: 0.4 };
 
@@ -38,8 +68,10 @@ export function curveFor(venue: Pick<Venue, 'kind' | 'typicalCurve'>, weekend: b
   return (weekend ? WEEKEND : WEEKDAY)[venue.kind];
 }
 
-/** Linear interpolation on the curve at a local time (hour + minute fraction), scaled by term phase. */
-export function typicalPct(venue: Pick<Venue, 'kind' | 'typicalCurve'>, at: number, phase: TermPhase = 'regular'): number {
+/** The learned student pattern for this hour when it has enough data; else linear interpolation on the curve at a local time, scaled by term phase. */
+export function typicalPct(venue: Pick<Venue, 'kind' | 'typicalCurve'>, at: number, phase: TermPhase = 'regular', pattern?: VenuePattern | null): number {
+  const learned = learnedBucket(pattern, at);
+  if (learned) return learned.pct;
   const p = zonedParts(at);
   const weekend = p.weekday === 0 || p.weekday === 6;
   const c = curveFor(venue, weekend);
@@ -50,9 +82,13 @@ export function typicalPct(venue: Pick<Venue, 'kind' | 'typicalCurve'>, at: numb
 }
 
 /** Plain-English explanation of the estimate for the "Why this estimate?" screen. */
-export function explainTypical(venue: Pick<Venue, 'kind' | 'typicalCurve' | 'curveSource'>, at: number, phase: TermPhase): string {
+export function explainTypical(venue: Pick<Venue, 'kind' | 'typicalCurve' | 'curveSource'>, at: number, phase: TermPhase, pattern?: VenuePattern | null): string {
   const p = zonedParts(at);
   const weekend = p.weekday === 0 || p.weekday === 6;
+  const learned = learnedBucket(pattern, at);
+  if (learned) {
+    return t('curve.explainLearned', { pct: Math.round(learned.pct * 100), n: learned.n, days: learned.days, when: t('curve.at', { day: weekend ? t('curve.weekend') : t('curve.weekday'), time: formatMinutesShort(p.hour * 60) }) });
+  }
   const pct = Math.round(typicalPct(venue, at, phase) * 100);
   const who = venue.curveSource === 'venue' ? t('curve.whoVenue') : t('curve.whoKind', { kind: kindLabel(venue.kind) });
   const when = t('curve.at', { day: weekend ? t('curve.weekend') : t('curve.weekday'), time: formatMinutesShort(p.hour * 60) });

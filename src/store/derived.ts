@@ -14,7 +14,7 @@ import { nowMs } from '@/domain/time';
 import { blockAt, type BlockState } from '@/domain/timer';
 import { bestWindow, focusByHour, focusByVenue, streakDays, weekSummary } from '@/domain/focus';
 import { stationById } from '@/domain/transit';
-import type { CheckIn, CrowdReport, CrowdSnapshot, LiveLevel, Session, Venue } from '@/domain/types';
+import type { CheckIn, CrowdReport, CrowdSnapshot, LiveLevel, Session, Venue, VenuePattern } from '@/domain/types';
 import { t } from '@/i18n';
 
 import { useAppState } from './appStore';
@@ -69,7 +69,7 @@ export function useVenue(id: string | undefined): Venue | null {
 function ownReports(checkIns: readonly CheckIn[]): Record<string, CrowdReport[]> {
   const out: Record<string, CrowdReport[]> = {};
   for (const c of checkIns) {
-    (out[c.venueId] ??= []).push(toReport(c));
+    if (c.kind !== 'past') (out[c.venueId] ??= []).push(toReport(c));
   }
   return out;
 }
@@ -92,6 +92,7 @@ export function useLiveLevels(): Record<string, LiveLevel> {
   const my = useAppState((s) => s.myCheckIns);
   const crowd = useAppState((s) => s.crowd);
   const demo = useAppState((s) => s.demoReports);
+  const patterns = usePatterns();
   const phase = useTermPhase();
   const now = useNow();
   return useMemo(() => {
@@ -99,10 +100,15 @@ export function useLiveLevels(): Record<string, LiveLevel> {
     const out: Record<string, LiveLevel> = {};
     for (const v of venues) {
       const reports = reportsFor(v.venueId, mine, crowd, demo);
-      out[v.venueId] = fuse({ venue: v, reports, now, phase });
+      out[v.venueId] = fuse({ venue: v, reports, now, phase, pattern: patterns?.[v.venueId] ?? null });
     }
     return out;
-  }, [venues, my, crowd, demo, phase, now]);
+  }, [venues, my, crowd, demo, patterns, phase, now]);
+}
+
+/** Learned baselines by venue id, when the phone has downloaded them. */
+export function usePatterns(): Record<string, VenuePattern> | undefined {
+  return useAppState((s) => s.pattern?.patterns);
 }
 
 export interface RankingView extends RankResult {
@@ -118,6 +124,7 @@ export function useRanking(): RankingView {
   const prefs = useAppState((s) => s.prefs);
   const stations = useAppState((s) => s.stations);
   const location = useAppState((s) => s.location);
+  const patterns = usePatterns();
   const phase = useTermPhase();
   const now = useNow();
   return useMemo(() => {
@@ -127,9 +134,9 @@ export function useRanking(): RankingView {
     const origin = gpsInArea && location ? location : home ? { lat: home.lat, lng: home.lng } : { lat: (AREA_BBOX[prefs.area].minLat + AREA_BBOX[prefs.area].maxLat) / 2, lng: (AREA_BBOX[prefs.area].minLng + AREA_BBOX[prefs.area].maxLng) / 2 };
     const originKind: RankingView['originKind'] = gpsInArea ? 'gps' : home ? 'station' : 'area';
     const originLabel = originKind === 'gps' ? t('origin.you') : home ? home.name : AREA_NAME[prefs.area];
-    const ctx: RankContext = { origin, originLabel, prefs, now, gapEndsAt: gap?.now ? gap.endsAt : null, phase };
+    const ctx: RankContext = { origin, originLabel, prefs, now, gapEndsAt: gap?.now ? gap.endsAt : null, phase, patterns };
     return { ...rankVenues(venues, levels, ctx), ctx, gap, originKind };
-  }, [venues, levels, prefs, stations, location, phase, now]);
+  }, [venues, levels, prefs, stations, location, patterns, phase, now]);
 }
 
 /** The live session with its current block, ticking once a second while running. */

@@ -153,3 +153,15 @@ All fourteen G005 items shipped; where each one lives:
 | 14 | `src/i18n` (EN + ES, device language), `assets/locales` | `__tests__/i18n.test.ts`, Spanish screenshots in the session log |
 
 §12 "home renders usable content < 1.2 s": not measured as wall-clock on a device (Expo Go timings are dominated by the Metro bundle download). What runs before the first frame is one synchronous SQLite read per store key plus JSON.parse, measured at under a millisecond for a full 2,000-entry focus log in node, and nothing waits for the network; the optimisation record is `docs/perf.md`.
+
+## Student reports (2026-10-10)
+
+Approved design: `docs/superpowers/specs/2026-10-10-crowd-reports-design.md`. What it closes from the spec: the learned baseline (§4.2 "weight = f(proof, recency)" now also feeds a per-venue pattern; the Phase 2 "forecast" input exists as aggregates) and reports without presence proof (§4.2 BSSID/dwell remain impossible on iOS, so a student may say "I'm not at the spot" instead and is weighed and labelled accordingly). Still deferred: per-zone learned curves, forecast models, moderation tools, a venue console.
+
+| Item | Where it landed | Checked by |
+|---|---|---|
+| Report kinds on the relay, forced weights, 7-day past window | `src/app/api/crowd+api.ts`, `src/server/crowdStore.ts` | `__tests__/crowd-api.test.ts` |
+| Aggregates (venue × month × day type × hour), distinct-day sets, `/api/pattern` | `src/server/crowdStore.ts`, `src/app/api/pattern+api.ts` | `__tests__/pattern-api.test.ts` (memory + Redis REST fake) |
+| Learned baseline rule (5 reports, 3 days), remote reports never raise confidence and yield to any live report, past reports never live | `src/domain/curve.ts`, `src/domain/levels.ts` | `__tests__/levels.test.ts` |
+| Pattern cache, 6-hour refresh step, storage-guard order, wire format | `src/data/repos.ts`, `src/services/refresh.ts`, `src/services/crowdClient.ts` | `__tests__/refresh.test.ts`, `__tests__/storage-guard.test.ts`, `__tests__/crowd-client.test.ts` |
+| "I'm not at the spot" toggle, earlier-visit screen, underlined learned hours, offline-data row, EN + ES | `src/app/checkin/[id].tsx`, `src/app/report/[id].tsx`, `src/app/spot/[id].tsx`, `src/ui/level-widgets.tsx`, `src/app/data.tsx` | `__tests__/screens.test.tsx`, `__tests__/i18n.test.ts`, simulator captures |

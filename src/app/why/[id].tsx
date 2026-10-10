@@ -12,7 +12,7 @@ import { untilLabel } from '@/domain/hours';
 import { primaryStation, walkFormula } from '@/domain/transit';
 import { t } from '@/i18n';
 import { useAppState } from '@/store/appStore';
-import { useLiveLevels, useNow, useRanking, useTermPhase, useVenue } from '@/store/derived';
+import { useLiveLevels, useNow, usePatterns, useRanking, useTermPhase, useVenue } from '@/store/derived';
 import { Button, Callout, Cell, Group, KeyValue, SectionFooter, SectionHeader } from '@/ui/primitives';
 import { Screen, goBackOr } from '@/ui/Screen';
 import { CELL_PAD, colors, fonts, tabular, type } from '@/ui/theme';
@@ -25,6 +25,7 @@ export default function WhyScreen() {
   const ranking = useRanking();
   const phase = useTermPhase();
   const now = useNow();
+  const patterns = usePatterns();
   const stations = useAppState((s) => s.stations);
   const [showMath, setShowMath] = useState(false);
   const row = [...ranking.open, ...ranking.closed].find((r) => r.venue.venueId === id) ?? null;
@@ -86,7 +87,7 @@ export default function WhyScreen() {
               <KeyValue k={t('why.onArrival')} v={t('why.onArrivalValue', { level: levelText(row.arrival) })} last />
             </View>
           </Group>
-          <SectionFooter>{explainTypical(venue, now, phase)}</SectionFooter>
+          <SectionFooter>{explainTypical(venue, now, phase, patterns?.[venue.venueId] ?? null)}</SectionFooter>
 
           <SectionHeader>{t('why.confidence')}</SectionHeader>
           <Group>

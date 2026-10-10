@@ -14,7 +14,7 @@ import type { LatLng } from './geo';
 import { openState, type OpenState } from './hours';
 import { predictAt } from './levels';
 import { walkMinutes } from './transit';
-import type { Level, LiveLevel, Prefs, Venue } from './types';
+import type { Level, LiveLevel, Prefs, Venue, VenuePattern } from './types';
 
 export const RANK_WEIGHTS = { seats: 0.35, proximity: 0.25, openFit: 0.15, noise: 0.15, amenities: 0.1 } as const;
 /** Beyond this many minutes on foot a spot scores zero for proximity. */
@@ -44,6 +44,8 @@ export interface RankContext {
   /** End of the student's current free block, if one is active. Spots open past it rank higher. */
   gapEndsAt: number | null;
   phase?: TermPhase;
+  /** Learned student patterns by venue id, when the phone has them. */
+  patterns?: Record<string, VenuePattern>;
 }
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -74,7 +76,7 @@ export function amenityFit(venue: Venue, prefs: Prefs): number {
 export function rankVenue(venue: Venue, live: LiveLevel, ctx: RankContext): RankedVenue {
   const walkMin = walkMinutes(ctx.origin, venue);
   const arrivalAt = ctx.now + walkMin * 60_000;
-  const arrival = predictAt(venue, live, arrivalAt, ctx.now, ctx.phase);
+  const arrival = predictAt(venue, live, arrivalAt, ctx.now, ctx.phase, ctx.patterns?.[venue.venueId] ?? null);
   const state = openState(venue, ctx.now);
   const arrivalState = arrival.open ? openState(venue, arrivalAt) : null;
   const stayMin = arrivalState?.open && arrivalState.closesAt !== null ? Math.round((arrivalState.closesAt - arrivalAt) / 60_000) : null;

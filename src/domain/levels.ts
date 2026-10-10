@@ -9,10 +9,10 @@
 import { t, tn } from '@/i18n';
 
 import type { TermPhase } from './curve';
-import { typicalPct } from './curve';
+import { learnedBucket, typicalPct } from './curve';
 import { isOpenAt } from './hours';
 import { isWeekend, toEpoch } from './time';
-import type { Amenity, CheckIn, Confidence, CrowdReport, Level, LiveLevel, NoiseReport, Venue } from './types';
+import type { Amenity, CheckIn, Confidence, CrowdReport, Level, LiveLevel, NoiseReport, ReportKind, Venue, VenuePattern } from './types';
 
 export interface LevelMeta {
   level: Level;
@@ -84,9 +84,12 @@ export function proofStrength(distanceM: number | null, gpsAccuracyM: number | n
   return 0.4;
 }
 
+/** Weights of reports without presence proof; the relay forces the same values. */
+export const KIND_WEIGHT = { remote: 0.25, past: 0.5 } as const;
+
 /** The anonymous part of a check-in, with the weight the relay will store. */
 export function toReport(c: CheckIn): CrowdReport {
-  return { venueId: c.venueId, zoneId: c.zoneId, level: c.level, at: c.at, weight: proofStrength(c.proof.distanceM, c.proof.gpsAccuracyM), noise: c.noise, amenities: c.amenities };
+  return { venueId: c.venueId, kind: c.kind, zoneId: c.zoneId, level: c.level, at: c.at, weight: c.kind === 'live' ? proofStrength(c.proof.distanceM, c.proof.gpsAccuracyM) : KIND_WEIGHT[c.kind], noise: c.noise, amenities: c.amenities };
 }
 
 export function recencyDecay(ageMin: number, weekend: boolean): number {
@@ -99,6 +102,8 @@ export interface FusionInput {
   reports: readonly CrowdReport[];
   now: number;
   phase?: TermPhase;
+  /** The learned student pattern for this venue, when the phone has one. */
+  pattern?: VenuePattern | null;
 }
 
 /**
@@ -108,21 +113,25 @@ export interface FusionInput {
  *  confidence = how many fresh, agreeing, independent reports exist
  *  range      = widened when confidence is low or reports disagree
  */
-export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): LiveLevel {
+export function fuse({ venue, reports, now, phase = 'regular', pattern = null }: FusionInput): LiveLevel {
   const open = isOpenAt(venue, now);
   const weekend = isWeekend(now);
-  const prior = typicalPct(venue, now, phase);
+  const prior = typicalPct(venue, now, phase, pattern);
 
-  type R = { level: Level; ageMin: number; w: number; proof: number };
-  const live: R[] = [];
+  type R = { level: Level; ageMin: number; w: number; proof: number; remote: boolean };
+  const all: R[] = [];
   for (const r of reports) {
+    if (r.kind === 'past') continue;
     const t = toEpoch(r.at);
     if (!Number.isFinite(t) || t > now + 5 * 60_000) continue;
     const ageMin = (now - t) / 60_000;
     if (ageMin > FUSION.maxAgeMin) continue;
-    live.push({ level: r.level, ageMin, w: FUSION.reportBase * r.weight * recencyDecay(ageMin, weekend), proof: r.weight });
+    all.push({ level: r.level, ageMin, w: FUSION.reportBase * r.weight * recencyDecay(ageMin, weekend), proof: r.weight, remote: r.kind === 'remote' });
   }
-  live.sort((a, b) => a.ageMin - b.ageMin);
+  all.sort((a, b) => a.ageMin - b.ageMin);
+  // Reports from students who are not at the spot count only while nobody at the spot has reported.
+  const live = all.some((r) => !r.remote) ? all.filter((r) => !r.remote) : all;
+  const remote = live.filter((r) => r.remote).length;
 
   let num = FUSION.priorBase * prior;
   let den = FUSION.priorBase;
@@ -133,8 +142,9 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
   const pct = den > 0 ? num / den : prior;
   const level = bucket(pct);
 
-  const fresh = live.filter((r) => r.ageMin <= FUSION.freshMin);
-  const recent = live.filter((r) => r.ageMin <= FUSION.recentMin);
+  // Confidence rests on presence: remote reports never make a level "high" or "medium".
+  const fresh = live.filter((r) => !r.remote && r.ageMin <= FUSION.freshMin);
+  const recent = live.filter((r) => !r.remote && r.ageMin <= FUSION.recentMin);
   const strongRecent = recent.filter((r) => r.proof >= STRONG_PROOF);
   const levelsOf = (rs: R[]) => rs.map((r) => r.level);
   const spread = (rs: R[]) => (rs.length ? Math.max(...levelsOf(rs)) - Math.min(...levelsOf(rs)) : 0);
@@ -168,7 +178,8 @@ export function fuse({ venue, reports, now, phase = 'regular' }: FusionInput): L
     reports: live.length,
     fresh: fresh.length,
     newestAt: newest,
-    prior: open ? venue.curveSource : null,
+    prior: open ? (learnedBucket(pattern, now) ? 'reports' : venue.curveSource) : null,
+    remote,
     open,
   };
 }
@@ -190,9 +201,9 @@ export function confidenceText(l: LiveLevel, now: number): string {
     case 'medium':
       return tn(l.reports, 'level.medium', { ago });
     case 'low':
-      return tn(l.reports, 'level.low', { ago });
+      return tn(l.reports, l.remote > 0 ? 'level.lowRemote' : 'level.low', { ago });
     default:
-      return l.prior === 'venue' ? t('level.noneVenue') : t('level.noneTypical');
+      return l.prior === 'reports' ? t('level.noneLearned') : l.prior === 'venue' ? t('level.noneVenue') : t('level.noneTypical');
   }
 }
 
@@ -213,12 +224,12 @@ export function dedupeReports(own: readonly CrowdReport[], relay: readonly Crowd
 const ageMinutes = (at: string, now: number) => (now - toEpoch(at)) / 60_000;
 
 /** Per-zone levels for the zones that have at least one report in the last 90 minutes ("4F silent is full, 2F is chill"). */
-export function fuseZones({ venue, reports, now, phase = 'regular' }: FusionInput): Record<string, LiveLevel> {
+export function fuseZones({ venue, reports, now, phase = 'regular', pattern = null }: FusionInput): Record<string, LiveLevel> {
   const out: Record<string, LiveLevel> = {};
   for (const z of venue.zones) {
-    const zr = reports.filter((r) => r.zoneId === z.zoneId && ageMinutes(r.at, now) <= FUSION.staleMin);
+    const zr = reports.filter((r) => r.kind !== 'past' && r.zoneId === z.zoneId && ageMinutes(r.at, now) <= FUSION.staleMin);
     if (zr.length === 0) continue;
-    out[z.zoneId] = fuse({ venue, reports: zr, now, phase });
+    out[z.zoneId] = fuse({ venue, reports: zr, now, phase, pattern });
   }
   return out;
 }
@@ -227,12 +238,14 @@ export interface ReportDetails {
   noise: NoiseReport | null;
   amenities: Amenity[];
   at: string;
+  kind: ReportKind;
 }
 
 /** The newest recent report that said anything about noise or what was available. */
 export function latestReportDetails(reports: readonly CrowdReport[], now: number): ReportDetails | null {
   let best: CrowdReport | null = null;
   for (const r of reports) {
+    if (r.kind === 'past') continue;
     const age = ageMinutes(r.at, now);
     if (age < 0 || age > FUSION.staleMin) continue;
     if (r.noise === null || r.noise === undefined) {
@@ -240,18 +253,18 @@ export function latestReportDetails(reports: readonly CrowdReport[], now: number
     }
     if (!best || toEpoch(r.at) > toEpoch(best.at)) best = r;
   }
-  return best ? { noise: best.noise ?? null, amenities: best.amenities ?? [], at: best.at } : null;
+  return best ? { noise: best.noise ?? null, amenities: best.amenities ?? [], at: best.at, kind: best.kind ?? 'live' } : null;
 }
 
 /** Predicted level at a future instant: live level drifts back to the typical curve as the arrival time moves away. */
-export function predictAt(venue: Venue, live: LiveLevel, at: number, now: number, phase: TermPhase = 'regular'): { level: Level; levelHigh: Level; open: boolean } {
+export function predictAt(venue: Venue, live: LiveLevel, at: number, now: number, phase: TermPhase = 'regular', pattern: VenuePattern | null = null): { level: Level; levelHigh: Level; open: boolean } {
   const open = isOpenAt(venue, at);
-  const target = typicalPct(venue, at, phase);
+  const target = typicalPct(venue, at, phase, pattern);
   if (!open) return { level: bucket(target), levelHigh: bucket(target), open: false };
   const horizonMin = Math.max(0, (at - now) / 60_000);
   // Weight of "now" fades with a 45-minute half-life; with no live reports it is 0.
   const liveWeight = live.confidence === 'none' ? 0 : Math.pow(0.5, horizonMin / 45);
-  const base = typicalPct(venue, now, phase);
+  const base = typicalPct(venue, now, phase, pattern);
   const delta = live.pct - base; // how far today differs from a typical day right now
   const pct = Math.min(1, Math.max(0, target + delta * liveWeight));
   const level = bucket(pct);

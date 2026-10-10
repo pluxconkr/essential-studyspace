@@ -1,24 +1,25 @@
 /**
- * /api/crowd — the ONE server function in this app: an anonymous relay for crowd check-ins.
+ * /api/crowd — the anonymous relay for crowd reports.
  *
  *   GET  ?venues=a,b   → recent reports per venue (last 3 hours, minute-rounded, no identities)
- *   POST {venueId, zoneId?, level, at, weight} → stores one report
+ *   POST {venueId, zoneId?, level, at, weight?, kind?} → stores one report
  *
- * Storage: an Upstash-compatible Redis REST database when CROWD_STORE_URL/TOKEN are set
- * (deployments), else an in-memory map (the Metro dev server — fine for a demo on one network,
- * gone on restart). The phone never needs a key. No notes, no user ids, no precise location are
- * accepted; what is not collected cannot leak. Fusion happens on the phone with the same
- * domain code, so this route is a dumb, replaceable pipe.
+ * Three kinds of report: `live` (at the spot now; weight = the phone's presence proof),
+ * `remote` (now, not at the spot; fixed low weight, shown as such) and `past` (an earlier visit
+ * within 7 days; feeds only the learned baseline, never "right now"). Storage lives in
+ * src/server/crowdStore.ts. No notes, no user ids, no precise location are accepted; what is not
+ * collected cannot leak. Fusion happens on the phone with the same domain code, so this route is a
+ * dumb, replaceable pipe.
  */
 import { z } from 'zod';
 
-import { isLevel } from '@/domain/levels';
-
-export const RETENTION_MS = 3 * 3600_000;
-export const MAX_PER_VENUE = 200;
-export const MAX_VENUES_PER_GET = 60;
+import { KIND_WEIGHT, LEVEL_MID } from '@/domain/levels';
+import type { Level, ReportKind } from '@/domain/types';
+import { RETENTION_MS, bucketOf, getStore, parseVenueIds, type StoredReport } from '@/server/crowdStore';
 /** Per-IP POST budget per 10 minutes. A whole library behind campus NAT shares one address, so this is generous; it still stops a script. */
 export const RATE_LIMIT = { posts: 300, windowMs: 10 * 60_000 } as const;
+/** How far back an earlier-visit report may reach. */
+export const PAST_WINDOW_MS = 7 * 86400_000;
 
 const AMENITIES = ['outlets', 'wifi-eduroam', 'wifi-public', 'group-rooms', 'computers', 'printing', 'cafe', 'food-nearby', 'late-night', 'solo-desks', 'big-tables'] as const;
 
@@ -30,88 +31,10 @@ const ReportSchema = z.object({
   weight: z.number().min(0).max(1).optional(),
   noise: z.number().int().min(0).max(3).nullable().optional(),
   amenities: z.array(z.enum(AMENITIES)).max(AMENITIES.length).optional(),
+  kind: z.enum(['live', 'remote', 'past']).optional(),
+  /** Random per-report id from the phone, used only to ignore a re-sent earlier-visit report; never stored with it. */
+  id: z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/).optional(),
 });
-
-export interface StoredReport {
-  zoneId: string | null;
-  level: number;
-  /** ISO, rounded to the minute. */
-  at: string;
-  weight: number;
-  noise: number | null;
-  amenities: string[];
-}
-
-export interface CrowdStore {
-  kind: 'memory' | 'redis';
-  list(venueId: string): Promise<StoredReport[]>;
-  push(venueId: string, r: StoredReport): Promise<void>;
-}
-
-// ---------- In-memory store (dev server / tests) ----------
-
-export function createMemoryStore(): CrowdStore {
-  const map = new Map<string, StoredReport[]>();
-  return {
-    kind: 'memory',
-    async list(venueId) {
-      return map.get(venueId) ?? [];
-    },
-    async push(venueId, r) {
-      const list = [r, ...(map.get(venueId) ?? [])].slice(0, MAX_PER_VENUE);
-      map.set(venueId, list);
-    },
-  };
-}
-
-// ---------- Redis REST store (Upstash-compatible) ----------
-
-export function createRedisStore(url: string, token: string): CrowdStore {
-  async function cmd(parts: (string | number)[]): Promise<unknown> {
-    const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(parts) });
-    const body = (await res.json().catch(() => ({}))) as { result?: unknown; error?: string };
-    if (!res.ok || body.error) throw new Error(body.error ?? `redis ${res.status}`);
-    return body.result;
-  }
-  const key = (venueId: string) => `crowd:${venueId}`;
-  return {
-    kind: 'redis',
-    async list(venueId) {
-      const raw = (await cmd(['LRANGE', key(venueId), 0, MAX_PER_VENUE - 1])) as unknown;
-      if (!Array.isArray(raw)) return [];
-      const out: StoredReport[] = [];
-      for (const s of raw) {
-        try {
-          const r = JSON.parse(String(s)) as StoredReport;
-          if (r && typeof r.at === 'string' && isLevel(r.level)) out.push(r);
-        } catch {
-          /* skip bad row */
-        }
-      }
-      return out;
-    },
-    async push(venueId, r) {
-      await cmd(['LPUSH', key(venueId), JSON.stringify(r)]);
-      await cmd(['LTRIM', key(venueId), 0, MAX_PER_VENUE - 1]);
-      await cmd(['EXPIRE', key(venueId), Math.ceil(RETENTION_MS / 1000)]);
-    },
-  };
-}
-
-let store: CrowdStore | null = null;
-
-export function getStore(): CrowdStore {
-  if (store) return store;
-  const url = process.env.CROWD_STORE_URL?.trim();
-  const token = process.env.CROWD_STORE_TOKEN?.trim();
-  store = url && token ? createRedisStore(url, token) : createMemoryStore();
-  return store;
-}
-
-/** Tests swap the store. */
-export function setStore(s: CrowdStore | null): void {
-  store = s;
-}
 
 // ---------- Helpers ----------
 
@@ -151,12 +74,7 @@ function clientIp(request: Request): string {
 // ---------- Handlers ----------
 
 export async function GET(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const ids = (url.searchParams.get('venues') ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => /^[a-z0-9-]{1,80}$/.test(s))
-    .slice(0, MAX_VENUES_PER_GET);
+  const ids = parseVenueIds(new URL(request.url).searchParams.get('venues'));
   const s = getStore();
   const now = Date.now();
   const reports: Record<string, StoredReport[]> = {};
@@ -177,15 +95,24 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return Response.json({ error: 'bad-request' }, { status: 400 });
   }
+  const kind: ReportKind = body.kind ?? 'live';
   const t = Date.parse(body.at);
-  if (now - t > RETENTION_MS || t > now + 5 * 60_000) return Response.json({ error: 'stale' }, { status: 422 });
-  const r: StoredReport = { zoneId: body.zoneId ?? null, level: body.level, at: roundToMinute(body.at), weight: Math.min(1, Math.max(0.4, body.weight ?? 0.4)), noise: body.noise ?? null, amenities: body.amenities ?? [] };
+  const tooOld = now - t > (kind === 'past' ? PAST_WINDOW_MS : RETENTION_MS);
+  if (tooOld || t > now + 5 * 60_000) return Response.json({ error: 'stale' }, { status: 422 });
+  const weight = kind === 'live' ? Math.min(1, Math.max(0.4, body.weight ?? 0.4)) : KIND_WEIGHT[kind];
+  const r: StoredReport = { kind, zoneId: body.zoneId ?? null, level: body.level, at: roundToMinute(body.at), weight, noise: body.noise ?? null, amenities: body.amenities ?? [] };
   try {
-    // A phone that lost the response re-sends the same body; keep it once.
     const s = getStore();
+    // A phone that lost the response re-sends the same body; count it once.
     const key = JSON.stringify(r);
-    if ((await s.list(body.venueId)).some((h) => JSON.stringify(h) === key)) return Response.json({ ok: true, kept: r });
-    await s.push(body.venueId, r);
+    if (kind === 'past') {
+      // Identical earlier visits from different students are expected, so retries are told apart by the phone's id.
+      if (await s.seen(body.venueId, body.id ?? key)) return Response.json({ ok: true, kept: r });
+    } else {
+      if ((await s.list(body.venueId)).some((h) => JSON.stringify(h) === key)) return Response.json({ ok: true, kept: r });
+      await s.push(body.venueId, r);
+    }
+    await s.record(body.venueId, bucketOf(r.at), weight, LEVEL_MID[body.level as Level]);
   } catch {
     return Response.json({ error: 'store-unavailable' }, { status: 503 });
   }

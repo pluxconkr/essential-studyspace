@@ -13,13 +13,15 @@ const alexander = byId('alexander-library');
 describe('arrival prompt', () => {
   const now = Date.parse('2026-10-07T18:00:00Z');
   const atAlex = { lat: alexander.lat, lng: alexander.lng, accuracyM: 10, at: now };
-  const ci = (venueId: string, minAgo: number): CheckIn => ({ checkInId: 'c', venueId, zoneId: null, level: 1, noise: null, amenities: [], note: null, at: new Date(now - minAgo * 60_000).toISOString(), proof: { distanceM: 10, gpsAccuracyM: 10 }, source: 'me', synced: true });
+  const ci = (venueId: string, minAgo: number): CheckIn => ({ checkInId: 'c', kind: 'live', venueId, zoneId: null, level: 1, noise: null, amenities: [], note: null, at: new Date(now - minAgo * 60_000).toISOString(), proof: { distanceM: 10, gpsAccuracyM: 10 }, source: 'me', synced: true });
 
   test('offers the spot you are standing at, once per 30 minutes', () => {
     expect(arrivalCandidate(all, atAlex, [], now)?.venueId).toBe('alexander-library');
     expect(arrivalCandidate(all, atAlex, [ci('alexander-library', 10)], now)).toBeNull();
     expect(arrivalCandidate(all, atAlex, [ci('alexander-library', 45)], now)?.venueId).toBe('alexander-library');
     expect(arrivalCandidate(all, atAlex, [ci('carr-library', 1)], now)?.venueId).toBe('alexander-library');
+    // Saying "I'm not at the spot" or reporting an earlier visit is not being there.
+    expect(arrivalCandidate(all, atAlex, [{ ...ci('alexander-library', 10), kind: 'remote' }, { ...ci('alexander-library', 5), kind: 'past' }], now)?.venueId).toBe('alexander-library');
   });
 
   test('no prompt without a fresh fix or when nothing is within the radius', () => {
@@ -36,7 +38,12 @@ describe('arrival prompt', () => {
 });
 
 describe('wasted-trip honesty metric', () => {
-  const c = (level: 0 | 1 | 2 | 3 | 4, shown: 0 | 1 | 2 | 3 | 4 | null | undefined): CheckIn => ({ checkInId: 'x', venueId: 'v', zoneId: null, level, noise: null, amenities: [], note: null, at: 'now', proof: { distanceM: null, gpsAccuracyM: null }, source: 'me', synced: true, shownLevel: shown });
+  const c = (level: 0 | 1 | 2 | 3 | 4, shown: 0 | 1 | 2 | 3 | 4 | null | undefined): CheckIn => ({ checkInId: 'x', kind: 'live', venueId: 'v', zoneId: null, level, noise: null, amenities: [], note: null, at: 'now', proof: { distanceM: null, gpsAccuracyM: null }, source: 'me', synced: true, shownLevel: shown });
+  test('reports made elsewhere or about an earlier visit do not count', () => {
+    const base = c(3, 1);
+    expect(wastedTrips([{ ...base, kind: 'remote' }, { ...base, kind: 'past' }]).total).toBe(0);
+    expect(wastedTrips([base]).total).toBe(1);
+  });
   test('counts only check-ins that recorded what was shown; two steps off is a wasted trip', () => {
     expect(wastedTrips([c(1, 1), c(3, 2), c(4, 1), c(0, 4), c(2, null), c(2, undefined)])).toEqual({ total: 4, withinOne: 2, wasted: 2 });
     expect(wastedTrips([])).toEqual({ total: 0, withinOne: 0, wasted: 0 });

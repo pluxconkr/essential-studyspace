@@ -7,7 +7,7 @@ import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
-import { venueRepo, watchRepo } from '@/data/repos';
+import { patternRepo, venueRepo, watchRepo } from '@/data/repos';
 
 import { fetchCrowd } from './crowdClient';
 import { notifyWatchHits } from './notifications';
@@ -24,7 +24,7 @@ if (Platform.OS !== 'web') {
       const snap = await fetchCrowd(watches.map((w) => w.venueId));
       if (!snap) return BackgroundTask.BackgroundTaskResult.Failed;
       const now = Date.now();
-      const hits = watchHits(watches, venues, snap.reports, now);
+      const hits = watchHits(watches, venues, snap.reports, now, patternRepo.get()?.patterns);
       if (hits.length > 0) await notifyWatchHits(hits, new Date(now).toISOString());
       return BackgroundTask.BackgroundTaskResult.Success;
     } catch {

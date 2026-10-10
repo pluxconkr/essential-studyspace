@@ -7,16 +7,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
-import { kindLabel } from '@/domain/curve';
+import { kindLabel, learnedHours } from '@/domain/curve';
 import { describeWeek, formatDayHours, isAllDay, minutesToClose, openState, opensLate } from '@/domain/hours';
 import { fuseZones, latestReportDetails, levelLabel, levelText, noiseLabel } from '@/domain/levels';
 import { safetyFor } from '@/domain/safety';
 import { formatDate, formatIn, formatMinutesShort, formatShort, relativeAgo, zonedParts, zonedToEpoch } from '@/domain/time';
 import { formatModes, primaryStation, walkMinutes } from '@/domain/transit';
 import type { Venue } from '@/domain/types';
-import { t } from '@/i18n';
+import { t, tn } from '@/i18n';
 import { actions, useAppState } from '@/store/appStore';
-import { useLiveLevels, useNow, useRanking, useTermPhase, useVenue, useVenueReports } from '@/store/derived';
+import { useLiveLevels, useNow, usePatterns, useRanking, useTermPhase, useVenue, useVenueReports } from '@/store/derived';
 import { amenityLabel, noiseIcon } from '@/ui/icons';
 import { HourlyCurve, LevelBars, LevelHero, LevelLine } from '@/ui/level-widgets';
 import { Button, Callout, Cell, Group, KeyValue, SectionFooter, SectionHeader, Subhead, Toggle } from '@/ui/primitives';
@@ -49,7 +49,8 @@ export default function SpotScreen() {
   const scenario = useAppState((s) => s.settings.demoScenario);
   const row = useMemo(() => [...ranking.open, ...ranking.closed].find((r) => r.venue.venueId === id) ?? null, [ranking, id]);
   const reports = useVenueReports(id);
-  const zoneLevels = useMemo(() => (venue ? fuseZones({ venue, reports, now, phase }) : {}), [venue, reports, now, phase]);
+  const pattern = usePatterns()?.[id] ?? null;
+  const zoneLevels = useMemo(() => (venue ? fuseZones({ venue, reports, now, phase, pattern }) : {}), [venue, reports, now, phase, pattern]);
   const details = useMemo(() => latestReportDetails(reports, now), [reports, now]);
 
   if (!venue) {
@@ -71,6 +72,7 @@ export default function SpotScreen() {
   const curveWidth = Math.min(width - GUTTER * 2 - CELL_PAD * 2, 600);
   const safety = safetyFor(venue);
   const late = opensLate(venue, now);
+  const learned = learnedHours(pattern, now);
 
   const open = (url: string) => Linking.openURL(url).catch(() => {});
   const openMaps = () => {
@@ -85,6 +87,7 @@ export default function SpotScreen() {
         {details ? (
           <Text style={[type.footnote, { marginTop: 4 }]}>
             {t('spot.reported', { what: [details.noise !== null ? noiseLabel(details.noise) : null, ...details.amenities.map((a) => amenityLabel(a).toLowerCase())].filter(Boolean).join(', '), ago: relativeAgo(details.at, now) })}
+            {details.kind === 'remote' ? ` · ${t('spot.notAtSpot')}` : ''}
           </Text>
         ) : null}
         {row && row.arrival.open ? (
@@ -122,9 +125,12 @@ export default function SpotScreen() {
 
       <SectionHeader>{t('spot.typicalDay')}</SectionHeader>
       <Group padded>
-        <HourlyCurve venue={venue} now={now} arrivalAt={row?.arrivalAt ?? null} phase={phase} width={curveWidth} />
+        <HourlyCurve venue={venue} now={now} arrivalAt={row?.arrivalAt ?? null} phase={phase} pattern={pattern} width={curveWidth} />
       </Group>
-      <SectionFooter>{venue.curveSource === 'venue' ? t('spot.declaredByVenue') : t('spot.estimate', { kind: kindLabel(venue.kind) })}</SectionFooter>
+      <SectionFooter>{learned.hours > 0 ? tn(learned.hours, 'spot.learnedFooter', { reports: learned.reports }) : venue.curveSource === 'venue' ? t('spot.declaredByVenue') : t('spot.estimate', { kind: kindLabel(venue.kind) })}</SectionFooter>
+      <Group>
+        <Cell icon="history" title={t('report.entry')} accessory="chevron" onPress={() => router.push({ pathname: '/report/[id]', params: { id: venue.venueId } })} last testID="spot-report" />
+      </Group>
 
       <SectionHeader>{t('spot.zones')}</SectionHeader>
       <Group>
@@ -199,7 +205,7 @@ export default function SpotScreen() {
         {mine.length === 0 ? (
           <Cell icon="checkin" iconColor={colors.ink2} title={t('spot.noneYet')} subtitle={t('spot.stayOnPhone')} last />
         ) : (
-          mine.map((c, i) => <Cell key={c.checkInId} icon="checkin" title={`${levelLabel(c.level)}${c.zoneId ? ` · ${venue.zones.find((z) => z.zoneId === c.zoneId)?.name ?? c.zoneId}` : ''}`} subtitle={`${relativeAgo(c.at, now)}${c.note ? ` · “${c.note}”` : ''}${c.synced ? '' : t('spot.notSharedYet')}`} last={i === mine.length - 1} />)
+          mine.map((c, i) => <Cell key={c.checkInId} icon={c.kind === 'past' ? 'history' : 'checkin'} title={`${levelLabel(c.level)}${c.zoneId ? ` · ${venue.zones.find((z) => z.zoneId === c.zoneId)?.name ?? c.zoneId}` : ''}${c.kind === 'remote' ? ` · ${t('spot.notAtSpot')}` : c.kind === 'past' ? ` · ${t('spot.kindPast')}` : ''}`} subtitle={`${relativeAgo(c.at, now)}${c.note ? ` · “${c.note}”` : ''}${c.synced ? '' : t('spot.notSharedYet')}`} last={i === mine.length - 1} />)
         )}
       </Group>
 

@@ -18,7 +18,8 @@ export function wastedTrips(checkIns: readonly CheckIn[]): WastedTripStats {
   let withinOne = 0;
   let wasted = 0;
   for (const c of checkIns) {
-    if (c.shownLevel === null || c.shownLevel === undefined) continue;
+    // Only a student who was there can say what they found.
+    if (c.kind !== 'live' || c.shownLevel === null || c.shownLevel === undefined) continue;
     total += 1;
     const d = Math.abs(c.level - c.shownLevel);
     if (d <= 1) withinOne += 1;

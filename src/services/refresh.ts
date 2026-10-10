@@ -5,15 +5,17 @@
 import { cacheMetaRepo, dropLowPriority, isLowOnSpace, reportStorageNotice, sanitizeVenues, venueRepo } from '@/data/repos';
 import { fuse } from '@/domain/levels';
 import { nowIso, nowMs } from '@/domain/time';
-import type { AssetKey, CrowdReport, LiveLevel, Venue, Watch } from '@/domain/types';
+import type { AssetKey, CheckIn, CrowdReport, LiveLevel, Venue, VenuePattern, Watch } from '@/domain/types';
 import { actions, getState, isOfflineNow } from '@/store/appStore';
 
-import { fetchCrowd, postReport, withTimeout } from './crowdClient';
+import { fetchCrowd, fetchPattern, postReport, withTimeout } from './crowdClient';
 import { notifyWatchHits } from './notifications';
 
 export interface RefreshResult {
   crowd: 'ok' | 'skipped' | 'failed' | 'not-configured';
   venues: 'ok' | 'skipped' | 'failed' | 'no-source';
+  /** 'skipped' also when the cached baseline is younger than six hours. */
+  pattern: 'ok' | 'skipped' | 'failed';
   /** Own check-ins uploaded this run. */
   synced: number;
   watchHits: number;
@@ -21,6 +23,8 @@ export interface RefreshResult {
 
 /** Optional remote venue directory. Without it the bundled copy is the source. */
 const VENUES_URL = process.env.EXPO_PUBLIC_VENUES_URL;
+/** The learned baseline changes slowly; six hours between downloads is plenty. */
+const PATTERN_MAX_AGE_MS = 6 * 3600_000;
 
 function stamp(key: AssetKey, bytes: number, version: string) {
   // Device time on purpose: a demo scenario shifts the app clock, but a download happened when it happened.
@@ -48,6 +52,14 @@ export async function syncCheckIns(): Promise<number> {
   return done.length;
 }
 
+/** Save an own check-in and, when sharing is on and the relay is reachable, upload it right away. */
+export async function submitCheckIn(ci: CheckIn): Promise<void> {
+  actions.addCheckIn(ci);
+  if (getState().settings.shareCheckIns && !isOfflineNow() && ci.source !== 'demo') {
+    if ((await postReport(ci)) !== 'failed') actions.markCheckInsSynced([ci.checkInId]);
+  }
+}
+
 export async function refreshCrowd(): Promise<RefreshResult['crowd']> {
   if (isOfflineNow()) return 'skipped';
   const { venues, prefs } = getState();
@@ -57,6 +69,19 @@ export async function refreshCrowd(): Promise<RefreshResult['crowd']> {
   actions.setCrowd(snap);
   stamp('crowd', JSON.stringify(snap).length, snap.storage ?? 'relay');
   return snap.configured ? 'ok' : 'not-configured';
+}
+
+/** The learned baseline for every venue, at most once every six hours. */
+export async function refreshPattern(): Promise<RefreshResult['pattern']> {
+  if (isOfflineNow()) return 'skipped';
+  const { venues, cacheMeta } = getState();
+  const last = cacheMeta.pattern?.fetchedAt;
+  if (last && Date.now() - Date.parse(last) < PATTERN_MAX_AGE_MS) return 'skipped';
+  const snap = await fetchPattern(venues.map((v) => v.venueId));
+  if (!snap) return 'failed';
+  if (!actions.setPattern(snap)) return 'failed';
+  stamp('pattern', JSON.stringify(snap).length, snap.months.join(','));
+  return 'ok';
 }
 
 export async function refreshVenues(): Promise<RefreshResult['venues']> {
@@ -82,13 +107,13 @@ export async function refreshVenues(): Promise<RefreshResult['venues']> {
 }
 
 /** Watched spots that are open and at/below the asked level right now. Other students' reports only — a watch must not fire on your own check-in. */
-export function watchHits(watches: Watch[], venues: Venue[], reports: Record<string, CrowdReport[]>, now: number): { venue: Venue; live: LiveLevel }[] {
+export function watchHits(watches: Watch[], venues: Venue[], reports: Record<string, CrowdReport[]>, now: number, patterns?: Record<string, VenuePattern>): { venue: Venue; live: LiveLevel }[] {
   const hits: { venue: Venue; live: LiveLevel }[] = [];
   for (const w of watches) {
     const v = venues.find((x) => x.venueId === w.venueId);
     if (!v) continue;
-    const live = fuse({ venue: v, reports: reports[v.venueId] ?? [], now });
-    if (live.open && live.confidence !== 'none' && live.level <= w.notifyAtOrBelow) hits.push({ venue: v, live });
+    const live = fuse({ venue: v, reports: reports[v.venueId] ?? [], now, pattern: patterns?.[v.venueId] ?? null });
+    if (live.open && live.confidence !== 'none' && live.remote === 0 && live.level <= w.notifyAtOrBelow) hits.push({ venue: v, live });
   }
   return hits;
 }
@@ -102,7 +127,7 @@ export function refreshAll(): Promise<RefreshResult> {
   actions.setRefreshing(true, isOfflineNow() ? undefined : Date.now());
   inFlight = (async () => {
     if (isLowOnSpace()) reportStorageNotice(dropLowPriority(), true);
-    const total = VENUES_URL ? 3 : 2;
+    const total = VENUES_URL ? 4 : 3;
     let done = 0;
     actions.setRefreshProgress(0, total);
     const tick = <T,>(r: T): T => {
@@ -111,12 +136,12 @@ export function refreshAll(): Promise<RefreshResult> {
       return r;
     };
     const synced = await syncCheckIns().then(tick);
-    const [crowd, venues] = await Promise.all([refreshCrowd().then(tick), VENUES_URL ? refreshVenues().then(tick) : refreshVenues()]);
+    const [crowd, venues, pattern] = await Promise.all([refreshCrowd().then(tick), VENUES_URL ? refreshVenues().then(tick) : refreshVenues(), refreshPattern().then(tick)]);
     const s = getState();
-    const hits = crowd === 'ok' || crowd === 'not-configured' ? watchHits(s.watches, s.venues, s.crowd?.reports ?? {}, nowMs()) : [];
+    const hits = crowd === 'ok' || crowd === 'not-configured' ? watchHits(s.watches, s.venues, s.crowd?.reports ?? {}, nowMs(), s.pattern?.patterns) : [];
     if (hits.length > 0) await notifyWatchHits(hits, nowIso());
     actions.setRefreshing(false);
-    return { crowd, venues, synced, watchHits: hits.length };
+    return { crowd, venues, pattern, synced, watchHits: hits.length };
   })().finally(() => {
     inFlight = null;
   });

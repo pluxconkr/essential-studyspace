@@ -21,7 +21,7 @@ import { Screen } from '@/ui/Screen';
 import { colors, tabular, type } from '@/ui/theme';
 
 const kb = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
-const droppedLabel = (d: 'crowd-cache' | 'old-checkins') => (d === 'crowd-cache' ? t('data.dropped.crowd') : t('data.dropped.checkins'));
+const droppedLabel = (d: 'pattern-cache' | 'crowd-cache' | 'old-checkins') => (d === 'pattern-cache' ? t('data.dropped.pattern') : d === 'crowd-cache' ? t('data.dropped.crowd') : t('data.dropped.checkins'));
 
 export default function DataScreen() {
   const cacheMeta = useAppState((s) => s.cacheMeta);
@@ -29,6 +29,7 @@ export default function DataScreen() {
   const venueSource = useAppState((s) => s.venueSource);
   const venueVersion = useAppState((s) => s.venueVersion);
   const crowd = useAppState((s) => s.crowd);
+  const pattern = useAppState((s) => s.pattern);
   const myCheckIns = useAppState((s) => s.myCheckIns);
   const focusLog = useAppState((s) => s.focusLog);
   const settings = useAppState((s) => s.settings);
@@ -50,6 +51,7 @@ export default function DataScreen() {
     { key: 'crowd', icon: 'share', name: t('data.liveLevels'), size: crowd ? kb(JSON.stringify(crowd).length) : '—', saved: !!crowd, when: cacheMeta.crowd?.fetchedAt ? `${t('data.checkedAgo', { ago: relativeAgo(cacheMeta.crowd.fetchedAt, realNow) })}${crowd && !crowd.configured ? t('data.devRelay') : ''}` : t('data.notChecked'), stale: cacheMeta.crowd?.fetchedAt ? isStale(cacheMeta.crowd.fetchedAt, realNow, 1 / 24) : false },
     { key: 'checkins', icon: 'checkin', name: t('data.yourCheckIns', { n: myCheckIns.length }), size: kb(JSON.stringify(myCheckIns).length), saved: true, when: myCheckIns.some((c) => !c.synced) ? t('data.notSharedYet', { n: myCheckIns.filter((c) => !c.synced).length }) : t('data.allShared'), stale: false },
     { key: 'focus', icon: 'focus', name: t('data.focusLog', { n: focusLog.length }), size: kb(JSON.stringify(focusLog).length), saved: true, when: t('data.focusLogWhen'), stale: false },
+    { key: 'pattern', icon: 'chart', name: t('data.patterns'), size: pattern ? kb(JSON.stringify(pattern).length) : '—', saved: !!pattern, when: cacheMeta.pattern?.fetchedAt ? t('data.checkedAgo', { ago: relativeAgo(cacheMeta.pattern.fetchedAt, realNow) }) : t('data.notChecked'), stale: cacheMeta.pattern?.fetchedAt ? isStale(cacheMeta.pattern.fetchedAt, realNow, 7) : false },
   ];
   const savedCount = rows.filter((r) => r.saved).length;
 

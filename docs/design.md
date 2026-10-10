@@ -44,6 +44,7 @@ All text styles live in `src/ui/theme.ts`. No `fontSize`, `fontWeight`, `lineHei
 - **Segmented**: iOS style; with four or more options every label uses the smaller control size uniformly (no per-segment shrinking) and labels are chosen to fit ("N. Brunswick"). Where the options have descriptions (choosing an area in Preferences/Onboarding) use a check list of Cells instead, like the station picker.
 - **Levels**: five bars, filled = level + 1, range bars at 35 % opacity; colour by tone (green Empty/Chill, amber Filling, red Packed/Full); grey when closed; half strength when the level comes from the typical pattern with no live report. Always paired with the level word.
 - **Icons**: SF Symbols on iOS, Ionicons elsewhere, tinted, never on a background. Decorative by default — hidden from VoiceOver — unless the icon is the only content (then it carries an explicit label).
+- **Learned hours**: in the typical-day chart an hour whose level comes from student reports carries a 2 pt ink underline; the legend reads "▁ student reports" and the footer counts them. Reports from elsewhere are labelled in the honesty line ("· not at the spot") and never raise confidence.
 - **Empty states**: one Cell with a muted icon, a title and a one-line subtitle. Never a blank group.
 - **Dynamic Type**: text scales per the table above; rows grow, nothing truncates except the one-line honesty line in the map list. The root remounts when the font scale changes so already-mounted tabs re-measure.
 

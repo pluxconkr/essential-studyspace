@@ -134,9 +134,13 @@ export interface Station {
 /** Noise as reported by a student: silent / low murmur / chatty / loud. */
 export type NoiseReport = 0 | 1 | 2 | 3;
 
+/** `live` = at the spot now (proof-weighted); `remote` = now, not at the spot; `past` = an earlier visit, baseline only. */
+export type ReportKind = 'live' | 'remote' | 'past';
+
 /** A check-in made on THIS phone. Notes never leave the phone in v1. */
 export interface CheckIn {
   checkInId: string;
+  kind: ReportKind;
   venueId: string;
   zoneId: string | null;
   level: Level;
@@ -160,6 +164,8 @@ export interface CheckIn {
 /** Anonymous report as returned by the crowd relay. No ids, no notes, minute-rounded time. */
 export interface CrowdReport {
   venueId: string;
+  /** Absent = live. */
+  kind?: ReportKind;
   zoneId: string | null;
   level: Level;
   at: string;
@@ -177,6 +183,29 @@ export interface CrowdSnapshot {
   storage: 'memory' | 'redis' | null;
 }
 
+export type DayType = 'wk' | 'sa' | 'su';
+
+/** One learned-baseline bucket: how many reports, over how many distinct days, and their weighted mean occupancy. */
+export interface PatternBucket {
+  n: number;
+  days: number;
+  pct: number | null;
+}
+
+/** 24 buckets for weekdays, Saturdays and Sundays. */
+export interface VenuePattern {
+  wk: PatternBucket[];
+  sa: PatternBucket[];
+  su: PatternBucket[];
+}
+
+/** What the phone keeps from GET /api/pattern. */
+export interface PatternSnapshot {
+  fetchedAt: string;
+  months: string[];
+  patterns: Record<string, VenuePattern>;
+}
+
 /** Fused, publishable level for one venue right now. */
 export interface LiveLevel {
   venueId: string;
@@ -190,8 +219,10 @@ export interface LiveLevel {
   /** Reports within the "fresh" window — the ones a high-confidence verdict rests on. */
   fresh: number;
   newestAt: string | null;
-  /** What filled the gaps: the per-kind estimate, a venue-declared curve, or nothing (closed). */
-  prior: 'estimate' | 'venue' | null;
+  /** What filled the gaps: the per-kind estimate, a venue-declared curve, the learned student pattern, or nothing (closed). */
+  prior: 'estimate' | 'venue' | 'reports' | null;
+  /** Reports from students not at the spot that were used; they count only while no live report exists. */
+  remote: number;
   /** True when the venue is open at the moment of computation. */
   open: boolean;
 }
@@ -289,10 +320,10 @@ export interface LocationFix {
   at: number;
 }
 
-export type AssetKey = 'venues' | 'crowd' | 'maps';
+export type AssetKey = 'venues' | 'crowd' | 'maps' | 'pattern';
 
 /** What the app gave up when the phone ran out of space (never silently). */
-export type DroppedItem = 'crowd-cache' | 'old-checkins';
+export type DroppedItem = 'pattern-cache' | 'crowd-cache' | 'old-checkins';
 export interface StorageNotice {
   at: string;
   dropped: DroppedItem[];

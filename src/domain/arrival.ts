@@ -28,6 +28,6 @@ export function arrivalCandidate(venues: readonly Venue[], location: LocationFix
   }
   if (!best || bestM - slack > ARRIVAL_RADIUS_M) return null;
   const id = best.venueId;
-  const recent = checkIns.some((c) => c.venueId === id && now - toEpoch(c.at) < ARRIVAL_DEBOUNCE_MIN * 60_000);
+  const recent = checkIns.some((c) => c.kind === 'live' && c.venueId === id && now - toEpoch(c.at) < ARRIVAL_DEBOUNCE_MIN * 60_000);
   return recent ? null : best;
 }

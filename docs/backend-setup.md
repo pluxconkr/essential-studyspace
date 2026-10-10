@@ -1,6 +1,6 @@
 # Backend setup — the three values the app needs
 
-StudySpace has one server function, the anonymous check-in relay at `src/app/api/crowd+api.ts`. Everything else (hours, ranking, maps, timer, notifications) runs on the phone with no server. To make shared check-ins persist beyond one Metro process you supply exactly three values; the fourth is optional.
+StudySpace has two server functions over one store: the anonymous check-in relay at `src/app/api/crowd+api.ts` and the baseline read at `src/app/api/pattern+api.ts`. Everything else (hours, ranking, maps, timer, notifications) runs on the phone with no server. To make shared check-ins persist beyond one Metro process you supply exactly three values; the fourth is optional.
 
 | Value | Who reads it | Where it comes from | Without it |
 |---|---|---|---|
@@ -43,9 +43,23 @@ curl -X POST "http://localhost:8081/api/crowd" -H 'content-type: application/jso
 # {"ok":true,"kept":{…}}  ← GET again: the report is listed for 3 hours
 ```
 
-Request shape (`ReportSchema` in the route): `venueId` `[a-z0-9-]`, `zoneId` optional, `level` 0–4 (Empty…Full), `at` ISO 8601 with offset (rounded to the minute server-side), `weight` 0–1 (proof strength), `noise` 0–3 optional, `amenities` from the list in `src/domain/types.ts`. Anything else → `{"error":"bad-request"}` (400); a timestamp older than 3 hours or more than 5 minutes ahead → `{"error":"stale"}` (422); over the limit → `{"error":"rate-limited"}` (429). Limit: 300 posts per 10 minutes per IP. Retention: 3 hours. No name, device id, note or coordinate is accepted.
+Request shape (`ReportSchema` in the route): `venueId` `[a-z0-9-]`, `zoneId` optional, `level` 0–4 (Empty…Full), `at` ISO 8601 with offset (rounded to the minute server-side), `weight` 0–1 (proof strength; used for `live` only, `remote` is forced to 0.25 and `past` to 0.5), `noise` 0–3 optional, `amenities` from the list in `src/domain/types.ts`, `kind` `live` (default) | `remote` | `past`, `id` optional random per-report id (only used to ignore a re-sent `past` report; not stored with it). Anything else → `{"error":"bad-request"}` (400); a `live`/`remote` timestamp older than 3 hours, a `past` one older than 7 days, or any more than 5 minutes ahead → `{"error":"stale"}` (422); over the limit → `{"error":"rate-limited"}` (429). Limit: 300 posts per 10 minutes per IP. Live-list retention: 3 hours. No name, device id, note or coordinate is accepted.
 
 In the app: Offline data → **Live levels** row shows the relay size and time; the "dev relay (memory)" suffix disappears after the next refresh (pull down on Now).
+
+## Learned baseline (same store, no new values)
+
+Every report also lands in a per-venue aggregate (Redis hashes `pattern:<venue>:<YYYY-MM>` with fields `n|s|w|d:<wk|sa|su>:<hour>`, plus a date set per bucket, all with a 120-day expiry, and `crowd:<venue>:past-seen`, a 3-hour set that de-duplicates re-sent earlier-visit reports). The relay writes them through the Upstash `/pipeline` endpoint, which every Upstash Redis REST database has. Check it:
+
+```bash
+# an earlier visit (two days ago at 2 PM local); feeds the baseline only
+curl -X POST "http://localhost:8081/api/crowd" -H 'content-type: application/json' \
+  -d "{\"venueId\":\"alexander-library\",\"level\":3,\"kind\":\"past\",\"at\":\"$(date -u -v-2d +%Y-%m-%dT18:00:00Z)\"}"
+curl "http://localhost:8081/api/pattern?venues=alexander-library"
+# {"ok":true,"months":["2026-10","2026-09","2026-08"],"serverTime":"…","patterns":{"alexander-library":{"wk":[…24 buckets; the one for 2 PM local reads {"n":1,"days":1,"pct":0.8}…],"sa":[…],"su":[…]}}}
+```
+
+An hour replaces the app's estimate once its bucket holds 5 reports from 3 distinct days. Reports with `"kind":"remote"` are kept in the live list at weight 0.25 and labelled; `past` ones never appear in the live list.
 
 ## 3. Deploy the route (EAS Hosting)
 

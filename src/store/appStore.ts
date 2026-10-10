@@ -13,6 +13,7 @@ import {
   focusLogRepo,
   initStorage,
   onStorageNotice,
+  patternRepo,
   prefsRepo,
   sessionRepo,
   settingsRepo,
@@ -31,6 +32,7 @@ import type {
   FocusEntry,
   Level,
   LocationFix,
+  PatternSnapshot,
   Prefs,
   Session,
   Settings,
@@ -57,6 +59,8 @@ export interface AppState {
   stations: Station[];
   myCheckIns: CheckIn[];
   crowd: CrowdSnapshot | null;
+  /** The learned baseline from the relay, when downloaded. */
+  pattern: PatternSnapshot | null;
   /** Simulated reports from the active demo scenario (never persisted; regenerated at boot). */
   demoReports: Record<string, CrowdReport[]>;
   session: Session | null;
@@ -85,6 +89,7 @@ let state: AppState = {
   stations: [],
   myCheckIns: [],
   crowd: null,
+  pattern: null,
   demoReports: {},
   session: null,
   focusLog: [],
@@ -135,6 +140,7 @@ export function hydrate(): AppState {
     stations: stationRepo.get(),
     myCheckIns: checkInRepo.getAll(),
     crowd: crowdRepo.get(),
+    pattern: patternRepo.get(),
     session: sessionRepo.get(),
     focusLog: focusLogRepo.getAll(),
     watches: watchRepo.getAll(),
@@ -146,7 +152,7 @@ export function hydrate(): AppState {
 }
 
 onStorageNotice((notice) => {
-  setState({ storageNotice: notice, crowd: crowdRepo.get(), myCheckIns: checkInRepo.getAll(), cacheMeta: cacheMetaRepo.getAll() });
+  setState({ storageNotice: notice, crowd: crowdRepo.get(), pattern: patternRepo.get(), myCheckIns: checkInRepo.getAll(), cacheMeta: cacheMetaRepo.getAll() });
 });
 
 // ---------- Selectors / hooks ----------
@@ -174,6 +180,12 @@ export const actions = {
   setCrowd(s: CrowdSnapshot | null) {
     if (s) crowdRepo.set(s);
     setState({ crowd: s });
+  },
+  /** False when the cache could not be written (the UI still shows it; the next refresh retries). */
+  setPattern(p: PatternSnapshot): boolean {
+    const saved = patternRepo.set(p);
+    setState({ pattern: p });
+    return saved;
   },
   setDemoReports(r: Record<string, CrowdReport[]>) {
     setState({ demoReports: r });
