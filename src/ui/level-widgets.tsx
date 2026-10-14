@@ -1,6 +1,10 @@
 /**
  * Crowd-level widgets: bars (count, never colour alone), the level hero, the honesty line,
  * and the typical-day curve. Reference points: Apple Weather hourly strip, Reminders rows.
+ *
+ * Also the focus-by-hour chart of Your week and the zone and level pickers shared by the check-in and
+ * earlier-visit report forms. Pure views: levels arrive already fused (domain/levels.ts), typical values come from
+ * domain/curve.ts, and the clock comes in as `now`; nothing here reads the store or has side effects.
  */
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
@@ -16,11 +20,15 @@ import { noiseIcon } from './icons';
 import { Cell, Group, SectionHeader } from './primitives';
 import { colors, fonts, tabular, toneColor, type } from './theme';
 
+/** Tone of a level from the LEVELS table (Empty and Chill green, Filling amber, Packed and Full red); also colours the map pins. */
 export function levelTone(level: Level): 'green' | 'amber' | 'red' {
   return LEVELS[level].tone;
 }
 
-/** Five bars; filled = level + 1. A range lights the extra bars at half strength. */
+/**
+ * Five rising bars; filled = level + 1, in the level's tone. A range (`levelHigh` above `level`) lights the extra
+ * bars at low opacity. `muted` greys the bars for a closed spot. Screen readers hear "Filling, 3 of 5 bars".
+ */
 export function LevelBars({ level, levelHigh = level, size = 'md', muted = false, faint = false }: { level: Level; levelHigh?: Level; size?: 'sm' | 'md' | 'lg'; muted?: boolean; /** Half strength: a level from the typical pattern with no live report. */ faint?: boolean }) {
   const w = size === 'lg' ? 10 : size === 'md' ? 7 : 5;
   const gap = size === 'lg' ? 4 : 3;
@@ -38,7 +46,10 @@ export function LevelBars({ level, levelHigh = level, size = 'md', muted = false
   );
 }
 
-/** Inline "Filling · 2 reports, 6 min ago" with bars. */
+/**
+ * Inline "Filling · 1 report, 6 min ago" with bars: the level and its honesty line (confidenceText), or "Closed now".
+ * Used for the zone rows of a spot page and the spot rows of the Map tab.
+ */
 export function LevelLine({ live, now, compact }: { live: LiveLevel; now: number; /** List rows: shorten the no-report case to "typical pattern". */ compact?: boolean }) {
   const text = !live.open ? t('level.closedNow') : compact && live.confidence === 'none' ? t('level.typicalShort', { level: levelText(live) }) : `${levelText(live)} · ${confidenceText(live, now)}`;
   return (
@@ -49,7 +60,11 @@ export function LevelLine({ live, now, compact }: { live: LiveLevel; now: number
   );
 }
 
-/** The big level block on a spot detail: label, bars, blurb, honesty line. */
+/**
+ * The big level block on a spot detail: label, bars, blurb, honesty line. `isDemo` (a demo scenario is running)
+ * appends " · demo" to the honesty line. A closed spot shows "Closed" in grey. A polite live region, so Android
+ * TalkBack reads changes.
+ */
 export function LevelHero({ live, now, isDemo }: { live: LiveLevel; now: number; isDemo?: boolean }) {
   const tone = levelTone(live.level);
   return (
@@ -70,7 +85,17 @@ export function LevelHero({ live, now, isDemo }: { live: LiveLevel; now: number;
   );
 }
 
-/** Typical day as 24 bars with the current hour and an optional arrival marker. Closed hours are empty. */
+/**
+ * Typical day as 24 bars with the current hour and an optional arrival marker. Closed hours are empty.
+ * Each bar is typicalPct at the half hour (the students' value where that hour is learned, else the estimate),
+ * coloured by the level it falls in: the 0.45 / 0.7 cuts are written here to match LEVEL_BOUNDS. Learned hours get
+ * a 2 pt underline and the legend gains "▁ student reports". Solid line = now; dashed tint line = arrival.
+ *
+ * It draws today's clock hours 0–23 from today's hours entry only, so the small hours still open from yesterday's
+ * past-midnight close (e.g. "26:00") draw as closed, and an arrival after midnight is marked near the left edge.
+ * Bar h samples local midnight + h:30, with midnight taken as `now` minus the minutes since midnight, so on a
+ * DST-change day the bars on the far side of the change sample the neighbouring hour.
+ */
 export function HourlyCurve({ venue, now, arrivalAt, phase, pattern = null, width, height = 96 }: { venue: Venue; now: number; arrivalAt?: number | null; phase: TermPhase; pattern?: VenuePattern | null; width: number; height?: number }) {
   const p = zonedParts(now);
   const day = hoursOn(venue, p.dateKey).hours;
@@ -120,7 +145,10 @@ export function HourlyCurve({ venue, now, arrivalAt, phase, pattern = null, widt
   );
 }
 
-/** Row of focus seconds by hour (profile). */
+/**
+ * Row of focus seconds by hour (profile): "When you actually focus" on Your week, over the whole focus log, scaled to
+ * the busiest hour. `highlightStart` turns that hour and the next green (the best two-hour window, wrapping past midnight).
+ */
 export function HourBars({ values, width, height = 72, highlightStart }: { values: readonly number[]; width: number; height?: number; highlightStart?: number | null }) {
   const max = Math.max(1, ...values);
   const padB = 14;
@@ -150,7 +178,10 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', gap: 12, marginTop: 2 },
 });
 
-/** "Where in the building" check list, shared by check-in and earlier-visit reports. Nothing for single-zone venues. */
+/**
+ * "Where in the building" check list, shared by check-in and earlier-visit reports. Nothing for single-zone venues.
+ * `null` is the whole building; each zone row shows its noise glyph and floor.
+ */
 export function ZonePicker({ venue, zoneId, onChange }: { venue: Venue; zoneId: string | null; onChange: (z: string | null) => void }) {
   if (venue.zones.length <= 1) return null;
   return (
@@ -166,7 +197,10 @@ export function ZonePicker({ venue, zoneId, onChange }: { venue: Venue; zoneId: 
   );
 }
 
-/** The five level rows of a report form. */
+/**
+ * The five level rows of a report form (Empty … Full, each with bars and blurb); the chosen one is checked.
+ * Returns bare Cells for the caller's Group; each row's testID is `testIDPrefix` + the level number.
+ */
 export function LevelRows({ level, onChange, testIDPrefix }: { level: Level | null; onChange: (l: Level) => void; testIDPrefix: string }) {
   return ALL_LEVELS.map((l, i) => (
     <Cell key={l} leading={<LevelBars level={l} size="md" />} title={levelLabel(l)} subtitle={levelBlurb(l)} accessory={level === l ? 'check' : 'none'} onPress={() => onChange(l)} accessibilityRole="button" accessibilityState={{ selected: level === l }} last={i === ALL_LEVELS.length - 1} testID={`${testIDPrefix}${l}`} />

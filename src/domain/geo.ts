@@ -1,18 +1,24 @@
 /**
  * Geometry helpers: great-circle distance and an equirectangular projection used by
  * the offline SVG area maps. Pure functions.
+ *
+ * How it fits: haversineM() measures presence for check-ins and the arrival prompt, finds the spot nearest the
+ * GPS fix and feeds walking times (transit.ts); inBBox() decides whether a GPS fix is inside the chosen area;
+ * makeProjection() and lineToPath() turn the bundled OpenStreetMap lines into SVG paths (ui/AreaMap.tsx).
  */
 import type { BBox } from './areas';
 
+/** A point in degrees. Venues, stations and GPS fixes all have this shape, so they pass in directly. */
 export interface LatLng {
   lat: number;
   lng: number;
 }
 
 const EARTH_RADIUS_M = 6_371_008.8;
+/** Degrees to radians. */
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 
-/** Great-circle distance in metres. */
+/** Great-circle distance in metres (haversine on a spherical Earth). A straight line: walking adds a street factor (transit.ts). */
 export function haversineM(a: LatLng, b: LatLng): number {
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
@@ -22,7 +28,7 @@ export function haversineM(a: LatLng, b: LatLng): number {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-/** "850 m" / "1.2 km" */
+/** "850 m" / "1.2 km" / "12 km": metres rounded to 10 below 1 km, one decimal below 10 km; "—" when not finite. For the check-in presence line. */
 export function formatDistance(m: number): string {
   if (!Number.isFinite(m)) return '—';
   if (m < 1000) return `${Math.round(m / 10) * 10} m`;
@@ -30,10 +36,15 @@ export function formatDistance(m: number): string {
   return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
 }
 
+/**
+ * Whether a point lies inside `b` widened by `padDeg` degrees on every side. Decides whether the GPS fix may be
+ * the ranking origin (0.05° pad) and which venues a demo scenario fills; the bundled-data test uses it too.
+ */
 export function inBBox(p: LatLng, b: BBox, padDeg = 0): boolean {
   return p.lat >= b.minLat - padDeg && p.lat <= b.maxLat + padDeg && p.lng >= b.minLng - padDeg && p.lng <= b.maxLng + padDeg;
 }
 
+/** A fitted mapping from lat/lng to SVG pixels for one area map, with the drawing size it was fitted to (y grows downward, north is up). */
 export interface Projection {
   width: number;
   height: number;
@@ -64,6 +75,7 @@ export function makeProjection(bbox: BBox, width: number, height: number, paddin
 /** Build an SVG path "M x y L x y …" for a polyline of [lng, lat] positions (no close). */
 export function lineToPath(line: readonly (readonly [number, number])[], proj: Projection, precision = 1): string {
   if (line.length === 0) return '';
+  // One coordinate with `precision` decimals (0.1 px by default).
   const f = (n: number) => n.toFixed(precision);
   let d = '';
   for (let i = 0; i < line.length; i++) {

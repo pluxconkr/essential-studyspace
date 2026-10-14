@@ -1,6 +1,9 @@
 /**
  * S-00 Onboarding · where you study. One-time, ~30 seconds. No account, no email, no phone.
- * Works with no signal (local write first). Skip → New Brunswick defaults.
+ * Works with no signal (a local write, nothing else). Skip → New Brunswick defaults.
+ *
+ * Route `/onboarding`. The root layout's `Stack.Protected` guard shows it while the onboarded flag is
+ * unset (first launch, or after "Reset app data") and keeps the rest of the app behind it until then.
  */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -13,12 +16,14 @@ import { PrefsForm } from '@/ui/PrefsForm';
 import { Button } from '@/ui/primitives';
 import { Screen } from '@/ui/Screen';
 
+/** The Preferences form, seeded from the stored prefs (the defaults on a fresh install), with save and skip. */
 export default function OnboardingScreen() {
   const router = useRouter();
   const existing = useAppState((s) => s.prefs);
   const stations = useAppState((s) => s.stations);
   const [draft, setDraft] = useState<Prefs>(existing);
 
+  /** Saves the prefs and the onboarded flag (which flips the root layout's guard), then opens the Now tab. */
   const finish = (p: Prefs) => {
     actions.savePrefs(p, { finishOnboarding: true });
     router.replace('/');

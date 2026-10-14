@@ -1,5 +1,7 @@
 /**
  * The preferences form shared by Onboarding and Preferences: area, home station, noise, outlets, step-free.
+ * These are the ranking's inputs: which area's spots, where walks start when there is no GPS fix inside the area,
+ * the noise fit and the must-haves (domain/ranking.ts). The form only edits the screen's draft; the screen saves it (actions.savePrefs).
  */
 import type { Dispatch, SetStateAction } from 'react';
 
@@ -10,7 +12,13 @@ import { t } from '@/i18n';
 
 import { Cell, Group, SectionFooter, SectionHeader, Segmented, Toggle } from './primitives';
 
+/**
+ * Edits `draft` through `setDraft`. Picking an area also resets the home station to that area's default, so the
+ * draft never points at a station in another area, and the station list shows only the chosen area's stations.
+ * `stationFooter` goes under that list (Onboarding explains the origin).
+ */
 export function PrefsForm({ draft, setDraft, stations, stationFooter }: { draft: Prefs; setDraft: Dispatch<SetStateAction<Prefs>>; stations: Station[]; stationFooter?: string }) {
+  /** Sets one field of the draft. */
   const set = <K extends keyof Prefs>(k: K, v: Prefs[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const areaStations = stations.filter((s) => s.area === draft.area);
 

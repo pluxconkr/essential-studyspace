@@ -1,5 +1,11 @@
 /**
- * "Why this ranking?" — three plain reasons first; the arithmetic behind them on request.
+ * "Why this ranking?" — four plain reasons first (seats on arrival, walk, how long it stays open,
+ * noise match); the arithmetic behind them on request.
+ *
+ * Route `/why/[id]`, a modal opened from the spot page. It reads the same ranking row and fused level
+ * the Now tab uses and prints the shipped constants (RANK_WEIGHTS, FUSION, LEVEL_BOUNDS, the walking
+ * formula) with this spot's numbers filled in. The report-weight row quotes the weekday half-life
+ * (weekends use FUSION.halfLifeWeekendMin). Read-only.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -17,6 +23,13 @@ import { Button, Callout, Cell, Group, KeyValue, SectionFooter, SectionHeader } 
 import { Screen, goBackOr } from '@/ui/Screen';
 import { CELL_PAD, colors, fonts, tabular, type } from '@/ui/theme';
 
+/**
+ * Explains one spot's place in the current ranking. Spots outside the student's area, and unknown ids,
+ * have no ranking row and get a "Not in the current ranking" callout. The large title is the rank among
+ * spots open on arrival, or "Closed on arrival". "Show the arithmetic" reveals the score terms, the
+ * fusion weights and level buckets, the learned-or-estimated baseline for this hour, the confidence rules
+ * and the walking formula.
+ */
 export default function WhyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -45,6 +58,7 @@ export default function WhyScreen() {
   const lvl = levelText(row.arrival);
   const seatsLine = !row.arrival.open ? t('why.closedWhenArrive') : row.parts.seats >= 0.6 ? t('why.seatsLikely', { level: lvl }) : row.parts.seats >= 0.35 ? t('why.someSeats', { level: lvl }) : t('why.fewSeats', { level: lvl });
   const until = untilLabel(row.state);
+  // untilLabel() marks an all-day day with its lowercase "open 24 hours" text; show the sentence-case one instead.
   const stayLine = row.stayMin === null ? t('why.closedOnArrival') : until === t('hours.open24lower') ? t('hours.open24') : until ? `${t('why.openUntil', { until })}${row.stayMin < 90 ? t('why.onlyMin', { n: row.stayMin }) : ''}` : t('why.open');
 
   return (

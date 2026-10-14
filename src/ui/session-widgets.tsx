@@ -1,6 +1,10 @@
 /**
  * Focus-session widgets: the timer ring with big numerals, the block strip, and goal rows.
  * Reference points: Clock timer numerals, Reminders list rows.
+ *
+ * Used by the Focus tab. The ring and the strip are pure views of a BlockState, which useSessionState computes with
+ * blockAt from the session's absolute timestamps; they keep no timer of their own, so a phone that was locked
+ * comes back showing the right block. No side effects: goal changes go out through callbacks.
  */
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -13,6 +17,11 @@ import { Icon } from './icons';
 import { Checkbox, ProgressRing } from './primitives';
 import { MIN_TAP, colors, tabular, type } from './theme';
 
+/**
+ * The focus timer: a ring filling with the elapsed share of the current block (tint for focus, green for a break,
+ * grey while paused) around the time left as MM:SS, with "focus · block 2 of 4" under it. A free session shows a
+ * full ring, "Free" and "open-ended"; a finished one shows "Done" and "all blocks finished".
+ */
 export function TimerRing({ block, size = 220 }: { block: BlockState; size?: number }) {
   const pct = block.totalMs && block.remainingMs !== null ? ((block.totalMs - block.remainingMs) / block.totalMs) * 100 : 0;
   const color = block.kind === 'break' ? colors.green : colors.tint;
@@ -32,7 +41,10 @@ export function TimerRing({ block, size = 220 }: { block: BlockState; size?: num
   );
 }
 
-/** One segment per focus/break block: done = tint, current = outlined, upcoming = fill. */
+/**
+ * One segment per focus/break block, as wide as its minutes: done = filled (tint for focus, green for a break),
+ * current = outlined in that colour, upcoming = grey fill. Nothing for a free session (one open-ended block).
+ */
 export function BlockStrip({ session, block }: { session: Session; block: BlockState }) {
   const shape = shapeById(session.shapeId);
   if (shape.id === 'free') return null;
@@ -49,6 +61,10 @@ export function BlockStrip({ session, block }: { session: Session; block: BlockS
   );
 }
 
+/**
+ * One declared goal: a checkbox, the text (struck through when done) and, with `onRemove`, a small × button.
+ * Used on the Focus tab both while setting up a session and during it.
+ */
 export function GoalRow({ goal, onToggle, onRemove, last }: { goal: Goal; onToggle: (v: boolean) => void; onRemove?: () => void; last?: boolean }) {
   return (
     <View style={styles.goal}>

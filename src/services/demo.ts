@@ -2,6 +2,11 @@
  * Demo scenarios for judging and the submission video. They inject simulated reports (always
  * labelled "demo") and shift the app clock so hours logic can be shown at any time of day.
  * 'live' = real data only.
+ *
+ * Demo reports live in the store's memory only: they are fused into the levels on screen but are never
+ * uploaded and never trigger watch notifications. Only the scenario name is saved; the clock offset is
+ * recomputed at every boot (restoreDemoScenario). Switched from the Offline data screen's "Demo & testing"
+ * section and, in development builds only, the Now tab's `?demo=` deep link.
  */
 import { AREA_BBOX } from '@/domain/areas';
 import { inBBox } from '@/domain/geo';
@@ -11,21 +16,26 @@ import { t } from '@/i18n';
 import type { CrowdReport, DemoScenario, Level, Venue } from '@/domain/types';
 import { actions, getState } from '@/store/appStore';
 
-/** Local time of day each scenario is shown at (minutes from midnight). */
+/** Local (New Jersey) time of day each scenario sets the app clock to, in minutes from midnight. */
 export const SCENARIO_CLOCK: Record<Exclude<DemoScenario, 'live'>, number> = {
   finals: 15 * 60, // 3:00 PM — the afternoon crunch
   quiet: 9 * 60 + 30, // 9:30 AM — libraries just opened
   late: 23 * 60 + 35, // 11:35 PM — most places close at midnight
 };
 
+/** Scenario name in the current language (Live, Finals, Quiet, Late night), for the Offline data screen's demo control. */
 export const scenarioLabel = (s: DemoScenario) => t(`demo.${s}` as const);
 
-/** Clock offset that makes "now" read as the scenario time on the current local date (weekday scenarios move to the next weekday). */
+/**
+ * Milliseconds to add to the device clock so the app clock reads the scenario's time of day (New Jersey time)
+ * on today's local date, or on the coming Monday when today is a weekend. 0 for 'live'. Negative on a weekday
+ * once the scenario time has passed (e.g. Quiet, 9:30 AM, chosen in the afternoon).
+ */
 export function clockOffsetFor(scenario: DemoScenario, realNow: number = Date.now()): number {
   if (scenario === 'live') return 0;
   const p = zonedParts(realNow);
   let key = p.dateKey;
-  // Finals and late-night are weekday stories; shift Saturday/Sunday to Monday.
+  // Finals, the quiet morning and late night are all weekday stories; shift Saturday/Sunday to Monday.
   if (p.weekday === 6) key = shiftDateKey(key, 2);
   else if (p.weekday === 0) key = shiftDateKey(key, 1);
   return zonedToEpoch(key, SCENARIO_CLOCK[scenario]) - realNow;
@@ -38,9 +48,16 @@ function hash01(s: string): number {
   return ((h >>> 0) % 1000) / 1000;
 }
 
+/** Round a fractional crowd score to the nearest level, kept within 0–4 (Empty … Full). */
 const clampLevel = (n: number): Level => Math.max(0, Math.min(4, Math.round(n))) as Level;
 
-/** Simulated recent reports per open venue in the area, relative to the (shifted) app clock. */
+/**
+ * Simulated recent reports per open venue in the area, relative to the (shifted) app clock.
+ * For each given venue open at `now`: 3 reports for Finals, 2 otherwise, 4–29 min old, near-full weight (0.85–1),
+ * levels scattered ±0.5 around a per-kind base, then rounded (libraries packed at finals, cafés busier than the
+ * rest in the quiet morning, everything calm late at night). No `kind`, so they read as live. Levels, ages and
+ * weights are derived from the venue id, so a scenario looks the same every time. Empty for 'live'.
+ */
 export function buildDemoReports(scenario: DemoScenario, venues: readonly Venue[], now: number): Record<string, CrowdReport[]> {
   if (scenario === 'live') return {};
   const out: Record<string, CrowdReport[]> = {};
@@ -54,7 +71,7 @@ export function buildDemoReports(scenario: DemoScenario, venues: readonly Venue[
     const count = scenario === 'finals' ? 3 : 2;
     const list: CrowdReport[] = [];
     for (let i = 0; i < count; i++) {
-      const ageMin = 4 + Math.floor(hash01(`${v.venueId}:${i}`) * 14) + i * 6; // 4–40 min old
+      const ageMin = 4 + Math.floor(hash01(`${v.venueId}:${i}`) * 14) + i * 6; // 4–29 min old
       list.push({ venueId: v.venueId, zoneId: null, level: clampLevel(base + (hash01(`${v.venueId}:${i}:l`) - 0.5)), at: new Date(now - ageMin * 60_000).toISOString(), weight: 0.85 + hash01(`${v.venueId}:${i}:w`) * 0.15 });
     }
     out[v.venueId] = list;
@@ -62,7 +79,12 @@ export function buildDemoReports(scenario: DemoScenario, venues: readonly Venue[
   return out;
 }
 
-/** Apply a scenario: shift the clock, inject labelled reports, remember the choice. */
+/**
+ * Apply a scenario: shift the clock, inject labelled reports, remember the choice.
+ * Sets the app clock offset, saves the scenario in settings (storage + store; the offset itself is not saved),
+ * and replaces the demo reports with ones for the venues of the chosen area (by area, or inside its map bounds).
+ * 'live' resets the clock and clears the demo reports; the Offline data screen's reset uses it that way.
+ */
 export function applyDemoScenario(scenario: DemoScenario, realNow: number = Date.now()): void {
   const offset = clockOffsetFor(scenario, realNow);
   setClockOffset(offset);
@@ -73,7 +95,11 @@ export function applyDemoScenario(scenario: DemoScenario, realNow: number = Date
   actions.setDemoReports(buildDemoReports(scenario, inArea, now));
 }
 
-/** Re-materialise the persisted scenario at boot (offsets are relative to today). */
+/**
+ * Re-materialise the persisted scenario at boot (offsets are relative to today). Only the scenario name was
+ * saved, so the offset and the in-memory demo reports are rebuilt for today. Does nothing for 'live'.
+ * Called by the root layout before any refresh runs.
+ */
 export function restoreDemoScenario(): void {
   const s = getState().settings.demoScenario;
   if (s !== 'live') applyDemoScenario(s);

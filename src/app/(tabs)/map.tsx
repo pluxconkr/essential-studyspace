@@ -1,6 +1,11 @@
 /**
  * S-02 Map (tab 2). Offline vector map per area with pins coloured by level (and numbered by bar
  * count, so colour is never the only channel). Zero network requests on this screen.
+ *
+ * The map is `AreaMap` (bundled, simplified OSM lines drawn with react-native-svg); levels come from the
+ * same on-phone fusion as the Now tab (`useLiveLevels`: the level now, not on arrival). Under the map:
+ * the legend, a location footer, an "All spots / Open late" layer, the tapped pin's card, and every
+ * shown spot grouped by campus or town, each row pushing the spot screen.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,6 +27,11 @@ import { Button, Cell, Group, SectionFooter, SectionHeader, Segmented } from '@/
 import { Screen } from '@/ui/Screen';
 import { GUTTER, colors } from '@/ui/theme';
 
+/**
+ * The Map tab. Shows the home area from prefs unless the area picker or an `area` deep link chose another;
+ * that choice stays on this screen and is never saved. Walk times here start at each spot's primary station,
+ * not at the GPS fix or home station as on the Now tab; the GPS fix is only shown (the "You" dot).
+ */
 export default function MapScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -33,12 +43,17 @@ export default function MapScreen() {
   const locStatus = useAppState((s) => s.locationStatus);
   const scenario = useAppState((s) => s.settings.demoScenario);
   const now = useNow();
+  // The tapped pin (venue id), shown as a card under the map; cleared when the area or layer changes.
   const [selected, setSelected] = useState<string | null>(null);
+  // 'late' keeps only spots whose hours today run to 11 PM or later.
   const [layer, setLayer] = useState<'all' | 'late'>('all');
   // Deep link for demos and tests: studyspace://map?area=newark
   const { area: areaParam } = useLocalSearchParams<{ area?: string }>();
   const paramArea = isArea(areaParam) ? areaParam : null;
+  // The area picked on this screen; null means the home area from prefs.
   const [areaChoice, setAreaChoice] = useState<Area | null>(paramArea);
+  // A new `area` link replaces that choice. It is applied during render against the last link seen (React's
+  // "adjust state when a prop changes" pattern) rather than in an effect, which react-hooks/set-state-in-effect flags.
   const [appliedParam, setAppliedParam] = useState(paramArea);
   if (paramArea !== appliedParam) {
     setAppliedParam(paramArea);
@@ -46,20 +61,26 @@ export default function MapScreen() {
   }
   const area: Area = areaChoice ?? prefsArea;
 
+  // The same once-per-launch GPS request as the Now tab, for when the Map is the first tab opened (e.g. from a deep link).
   useEffect(() => {
     if (locStatus === 'idle') void acquireLocation();
   }, [locStatus]);
 
   const inArea = useMemo(() => venues.filter((v) => v.area === area), [venues, area]);
   const shown = useMemo(() => (layer === 'late' ? inArea.filter((v) => opensLate(v, now)) : inArea), [inArea, layer, now]);
+  // List sections: the shown spots by campus (town when a spot has none), in directory order.
   const grouped = useMemo(() => {
     const m = new Map<string, Venue[]>();
     for (const v of shown) m.set(v.campus ?? v.town, [...(m.get(v.campus ?? v.town) ?? []), v]);
     return Array.from(m.entries());
   }, [shown]);
+  // The tapped spot, or null once it is no longer shown.
   const sel = selected ? shown.find((v) => v.venueId === selected) ?? null : null;
   const mapWidth = Math.min(width - GUTTER * 2, 600);
+  // Push the spot screen.
   const open = (v: Venue) => router.push({ pathname: '/spot/[id]', params: { id: v.venueId } });
+  // Row subtitle: the walk from the spot's primary station (its town when it has none), then "until …" while
+  // open, or "opens …" when closed.
   const sub = (v: Venue) => {
     const st = primaryStation(v, stations);
     const os = openState(v, now);

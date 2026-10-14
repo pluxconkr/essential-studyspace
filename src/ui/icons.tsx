@@ -1,6 +1,10 @@
 /**
  * Icons: SF Symbols on iOS (expo-symbols), Ionicons elsewhere. Always inline, never on a
  * background shape — the glyph and its tint carry the meaning.
+ *
+ * `ICONS` names every glyph the app draws, once per platform. Ionicons is imported here as a type only; the
+ * component comes from `./ion-fallback`, whose iOS variant renders nothing, so the iOS build never bundles the
+ * Ionicons font (docs/perf.md). Also maps domain values to glyphs (noise policy, venue kind) and amenities to labels.
  */
 import type Ionicons from '@expo/vector-icons/Ionicons';
 import { SymbolView, type SymbolWeight } from 'expo-symbols';
@@ -12,8 +16,13 @@ import { t } from '@/i18n';
 
 import { IonFallback } from './ion-fallback';
 
+/** Any valid Ionicons glyph name; checks the `ion` column of ICONS. */
 type IonName = ComponentProps<typeof Ionicons>['name'];
 
+/**
+ * App icon name → SF Symbol (iOS) and Ionicons glyph (Android, web). `satisfies` type-checks every Ionicons name
+ * while keeping the literal keys that make up IconName. The SF names are not type-checked (see Icon).
+ */
 const ICONS = {
   now: { sf: 'location.fill', ion: 'navigate' },
   nowOutline: { sf: 'location', ion: 'navigate-outline' },
@@ -78,9 +87,13 @@ const ICONS = {
   gap: { sf: 'hourglass', ion: 'hourglass-outline' },
 } as const satisfies Record<string, { sf: string; ion: IonName }>;
 
+/** One of the app's icon names (a key of ICONS), e.g. 'checkin' or 'offline'. */
 export type IconName = keyof typeof ICONS;
 
 /**
+ * Draws one app icon in a size × size box: the SF Symbol on iOS, the Ionicons glyph on Android and web.
+ * The SF name is cast past expo-symbols' SFSymbol type, so a misspelt one draws nothing on iOS (no fallback there).
+ *
  * Decorative by default: the adjacent text carries the meaning, so VoiceOver must not read symbol
  * names ("hourglass", "duration"). Controls whose only content is an icon label themselves.
  */
@@ -95,11 +108,12 @@ export function Icon({ name, size = 20, color = '#0B0F19', weight = 'medium', st
   );
 }
 
-/** One glyph per noise policy, used wherever a zone is listed. */
+/** One glyph per noise policy, used wherever a zone is listed (spot page zones, the zone picker of report forms). */
 export function noiseIcon(noise: NoisePolicy): IconName {
   return noise === 'silent' ? 'quiet' : noise === 'low' ? 'murmur' : 'noise';
 }
 
+/** Glyph for a venue kind in spot lists (Now, Map, Focus): university library, public library, student center, else the café cup. */
 export function kindIcon(kind: VenueKind): IconName {
   switch (kind) {
     case 'library':
@@ -113,5 +127,5 @@ export function kindIcon(kind: VenueKind): IconName {
   }
 }
 
-/** "Outlets" — in the current language. */
+/** Display name of an amenity ("Outlets", "eduroam wifi") in the current language, from the `amenity.*` keys. Used on the spot page. */
 export const amenityLabel = (a: Amenity) => t(`amenity.${a}` as const);

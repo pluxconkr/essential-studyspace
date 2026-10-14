@@ -1,6 +1,11 @@
 /**
  * S-06 Your week · focus hours, streak, when you actually focus, where you focus. Student-owned data,
  * derived on the phone, never shared with venues or schools. Settings live below it.
+ *
+ * Route `/profile`, pushed from the Now tab's streak row and the Focus tab. Stats come from
+ * `useFocusStats` over the local focus log; the "Shown vs. found" row is the honesty metric from the
+ * student's own check-ins. The Settings group links to Preferences, Free blocks, Offline data and
+ * Privacy. Read-only.
  */
 import { useRouter } from 'expo-router';
 import { Text, View, useWindowDimensions } from 'react-native';
@@ -16,6 +21,11 @@ import { Cell, Group, KeyValue, SectionFooter, SectionHeader } from '@/ui/primit
 import { Screen } from '@/ui/Screen';
 import { CELL_PAD, GUTTER, colors, type } from '@/ui/theme';
 
+/**
+ * Totals for the last 7 local days (focused time, sessions, goals), crowd check-ins of every kind kept on
+ * the phone, the streak (days with 25+ min) and shown-vs-found (`wastedTrips`, at-the-spot check-ins
+ * only); then focus by hour of day with the best 2-hour window, the top six places, and settings links.
+ */
 export default function ProfileScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();

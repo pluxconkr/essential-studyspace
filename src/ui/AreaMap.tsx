@@ -2,6 +2,8 @@
  * Offline vector map of one pilot area: OSM water, rail, light rail, named roads (bundled, simplified),
  * station glyphs, venue pins coloured by crowd level, and the GPS dot. No tiles, no network,
  * no API keys. Attribution is always visible (ODbL requirement).
+ *
+ * Used by the Map tab, with MapLegend under it. The GPS fix only places the dot; nothing here stores or sends it.
  */
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -16,6 +18,14 @@ import { t } from '@/i18n';
 import { levelTone } from './level-widgets';
 import { colors, fonts, toneColor, type } from './theme';
 
+/**
+ * Draws one area at width × height, with AREA_BBOX fitted to the frame (aspect kept, centred): water, minor then
+ * major roads, rail (dashed grey) and light rail (dashed blue), road labels, stations as "T" squares, and the
+ * area's venue pins. A pin shows its bar count in its level's tone, or "–" in grey when closed or without a level;
+ * the selected pin is larger and a tap calls `onSelect`. The GPS dot is drawn only inside the frame, else an
+ * "off this map" note shows. Projected paths are memoised per area and size, so selecting a pin or a level update
+ * does not re-project every line. Screen readers get one summary label instead of the drawing.
+ */
 export function AreaMap({
   area,
   venues,
@@ -45,7 +55,7 @@ export function AreaMap({
   const roads = useMemo(() => data.roads.map((r) => ({ ...r, d: lineToPath(r.pts, proj) })), [data, proj]);
   const pins = useMemo(() => venues.filter((v) => v.area === area).map((v) => ({ v, ...proj.toXY(v) })), [venues, area, proj]);
   const stationPins = useMemo(() => stations.filter((s) => s.area === area).map((s) => ({ s, ...proj.toXY(s) })), [stations, area, proj]);
-  // Road labels: the longest segment of each labelled road, placed at its midpoint unless a pin sits there.
+  // Road labels: the longest segment of each labelled road, placed at its middle vertex unless that is near the frame edge or a pin.
   const labels = useMemo(() => {
     const best = new Map<string, { pts: [number, number][]; len: number }>();
     for (const r of data.roads) {
@@ -165,7 +175,10 @@ export function AreaMap({
   );
 }
 
-/** Legend row rendered under the map. Numbers in pins are the bar count (1 = Empty … 5 = Full). */
+/**
+ * Legend row rendered under the map. Numbers in pins are the bar count (1 = Empty … 5 = Full).
+ * The last entry is the blue "You" dot, dimmed and labelled "You (no fix)" while there is no position.
+ */
 export function MapLegend({ hasPosition }: { hasPosition: boolean }) {
   return (
     <View style={styles.legend}>

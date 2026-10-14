@@ -1,6 +1,10 @@
 /**
- * Focus-log statistics: streak, hours by hour-of-day, best block, where you focus.
+ * Focus-log statistics: streak, hours by hour-of-day, best 2-hour window, where you focus.
  * Derived on device from the student-owned log. Never shared with venues or schools.
+ *
+ * How it fits: the log holds one FocusEntry per ended session (timer.toFocusEntry). useFocusStats
+ * (store/derived.ts) computes these for the Your week screen (profile.tsx) and the Now tab's streak row.
+ * Days and hours are New Jersey local time. Pure functions; no storage or network.
  */
 import { t } from '@/i18n';
 
@@ -10,6 +14,7 @@ import type { FocusEntry, Venue } from './types';
 /** A day counts toward the streak with at least this much focus. */
 export const STREAK_MIN_SECONDS = 25 * 60;
 
+/** Focus seconds per local date ("YYYY-MM-DD"), each session counted on the day it started. */
 export function focusByDay(log: readonly FocusEntry[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const e of log) {
@@ -19,7 +24,7 @@ export function focusByDay(log: readonly FocusEntry[]): Map<string, number> {
   return m;
 }
 
-/** Consecutive days (ending today or yesterday) with ≥ 25 min of focus. */
+/** Consecutive days (ending today or yesterday) with ≥ 25 min of focus. A today still short of 25 min does not break the streak. */
 export function streakDays(log: readonly FocusEntry[], now: number): number {
   const byDay = focusByDay(log);
   const today = zonedParts(now).dateKey;
@@ -33,6 +38,7 @@ export function streakDays(log: readonly FocusEntry[], now: number): number {
   return n;
 }
 
+/** Totals over the last 7 local days: focused time, sessions, and goals done out of goals set. */
 export interface WeekSummary {
   focusSeconds: number;
   sessions: number;
@@ -40,7 +46,7 @@ export interface WeekSummary {
   goalsTotal: number;
 }
 
-/** Last 7 local days including today. */
+/** Last 7 local days including today: every session that started on or after local midnight six days ago. */
 export function weekSummary(log: readonly FocusEntry[], now: number): WeekSummary {
   const from = shiftDateKey(zonedParts(now).dateKey, -6);
   const fromMs = zonedToEpoch(from, 0);
@@ -55,7 +61,11 @@ export function weekSummary(log: readonly FocusEntry[], now: number): WeekSummar
   return out;
 }
 
-/** Focus seconds attributed to each local hour of day (0..23), spreading a session across the hours it covered. */
+/**
+ * Focus seconds attributed to each local hour of day (0..23), spreading a session across the hours it covered.
+ * The share is by wall-clock time from start to end, so breaks and pauses are spread evenly too; entries without
+ * focus time or with an invalid or empty time span are skipped. Drawn as the "When you actually focus" bars.
+ */
 export function focusByHour(log: readonly FocusEntry[]): number[] {
   const out = new Array<number>(24).fill(0);
   for (const e of log) {
@@ -76,7 +86,7 @@ export function focusByHour(log: readonly FocusEntry[]): number[] {
   return out.map((s) => Math.round(s));
 }
 
-/** The 2-hour window with the most focus time, e.g. { startHour: 9, seconds: 7200 }. null when empty. */
+/** The 2-hour window with the most focus time, e.g. { startHour: 9, seconds: 7200 }. null when empty. It may wrap past midnight (23 → 1); ties go to the earlier hour. */
 export function bestWindow(byHour: readonly number[]): { startHour: number; seconds: number } | null {
   let best: { startHour: number; seconds: number } | null = null;
   for (let h = 0; h < 24; h++) {
@@ -86,6 +96,10 @@ export function bestWindow(byHour: readonly number[]): { startHour: number; seco
   return best;
 }
 
+/**
+ * Focus time and session count per spot, most focused first, for the "Where you focus" list. Sessions with no spot
+ * are grouped as "Somewhere else"; a spot no longer in the directory shows as "Removed spot".
+ */
 export function focusByVenue(log: readonly FocusEntry[], venues: readonly Venue[]): { venueId: string | null; name: string; seconds: number; sessions: number }[] {
   const m = new Map<string | null, { seconds: number; sessions: number }>();
   for (const e of log) {
@@ -99,17 +113,20 @@ export function focusByVenue(log: readonly FocusEntry[], venues: readonly Venue[
     .sort((a, b) => b.seconds - a.seconds);
 }
 
+/** Goals done as a whole percentage of goals set; null when none were set, so the screen can say so instead of 0%. */
 export function goalRate(s: Pick<WeekSummary, 'goalsDone' | 'goalsTotal'>): number | null {
   return s.goalsTotal === 0 ? null : Math.round((s.goalsDone / s.goalsTotal) * 100);
 }
 
-/** "9–11 AM" */
+/** "9–11 AM": a band of `hours` hours on a 12-hour clock, naming AM/PM once when both ends share it ("11 AM–1 PM" otherwise). */
 export function formatHourBand(startHour: number, hours = 2): string {
+  // An hour of day on a 12-hour clock (0 and 12 → 12), wrapping past midnight.
   const f = (h: number) => {
     const hh = ((h % 24) + 24) % 24;
     return `${hh % 12 === 0 ? 12 : hh % 12}`;
   };
   const endH = startHour + hours;
+  // AM or PM for an hour of day, in the current language, wrapping past midnight.
   const ampm = (h: number) => (((h % 24) + 24) % 24 < 12 ? t('time.am') : t('time.pm'));
   return ampm(startHour) === ampm(endH) ? `${f(startHour)}–${f(endH)} ${ampm(endH)}` : `${f(startHour)} ${ampm(startHour)}–${f(endH)} ${ampm(endH)}`;
 }

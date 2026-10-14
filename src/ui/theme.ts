@@ -1,12 +1,16 @@
 /**
- * Design tokens — native iOS idiom (grouped inset lists, SF Pro, one accent), light only.
+ * Design tokens — native iOS idiom (grouped inset lists, SF Pro, one accent), light only (app.json pins
+ * userInterfaceStyle to light, so there are no dark variants).
  *
  * Three semantic colours: Navy = information / tint, Red = warning (Packed/Full), Green = good
  * (Empty/Chill, done). Amber is reserved for caution: Filling, closing soon, stale data.
  * Surfaces follow iOS system grouped backgrounds so the app reads like a first-party utility.
+ *
+ * The primitives and widgets in src/ui read these, and screens import them for one-off styles. Pure constants, no side effects.
  */
 import { Platform, type TextStyle } from 'react-native';
 
+/** Raw colour values (the app's navy, red, green and amber plus iOS system grouped colours); exported only through the semantic `colors` below. */
 const palette = {
   navy: '#0F2B4C',
   navyTint: '#1F55A6', // interactive tint (links, buttons, icons)
@@ -47,6 +51,7 @@ export const colors = {
 /** Crowd-level tones → colours. Level is never colour alone: the bar count and label always accompany it. */
 export const toneColor = { green: colors.green, amber: colors.amber, red: colors.red } as const;
 
+/** Font families for text that sets one explicitly: `sans` for SVG text (chart axes, map labels), `rounded` for the timer numerals and the "Why this ranking?" formula. */
 export const fonts = {
   sans: Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' }),
   /** Big numerals (timer): SF Rounded on iOS, system elsewhere. Always tabular. */
@@ -56,6 +61,7 @@ export const fonts = {
 /** Tabular figures so digits never jitter. */
 export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
+/** Corner radii (pt) of grouped containers and full-size buttons. */
 export const radius = { group: 12, button: 12 } as const;
 
 /** Horizontal page margin (iOS inset grouped). */

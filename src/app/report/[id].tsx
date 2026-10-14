@@ -1,6 +1,11 @@
 /**
  * Earlier visit · how crowded a spot was at some hour in the last 7 days. It shapes the learned
- * typical pattern only — never "right now" — and sends one hour and a level, no location.
+ * typical pattern only — never "right now" — and sends one hour, a level and an optional zone, no location.
+ *
+ * Route `/report/[id]`, pushed from the spot page (under the typical-day chart) and from the check-in
+ * screen. The report is a `CheckIn` of kind `past` and goes through the same `submitCheckIn` path, so it
+ * is saved on the phone first and, with sharing on, uploaded now or queued while offline. The relay adds
+ * it to the hourly aggregates only, and the phone leaves its own past reports out of live fusion.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -18,9 +23,15 @@ import { Screen, goBackOr } from '@/ui/Screen';
 import { LevelRows, ZonePicker } from '@/ui/level-widgets';
 import { Button, Callout, Cell, Group, SectionFooter, SectionHeader } from '@/ui/primitives';
 
-/** The relay accepts earlier visits up to seven days back. */
+/** The relay accepts earlier visits up to seven days back; the day list is today plus the six days before it. */
 const DAYS = 7;
 
+/**
+ * Earlier-visit form for the `id` route param (a "Not in the saved directory" callout for an unknown id):
+ * a day (Today, Yesterday, then weekday names), an hour the venue was open that day, the level and an
+ * optional zone. Picking another day clears the chosen hour.
+ * Days and hours follow the app clock; in a demo scenario the report is saved as demo and never uploaded.
+ */
 export default function ReportScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -48,11 +59,17 @@ export default function ReportScreen() {
   });
   const day = days[dayOffset];
   const open = hoursOn(venue, day.dateKey).hours;
+  // Every hour the venue was open that day (exceptions applied), cut at midnight: the part of a
+  // closing time past midnight (e.g. "26:00") is not offered for that day.
   const first = open ? Math.floor(hhmmToMinutes(open.open) / 60) : 0;
   const last = open ? Math.min(24, Math.ceil(hhmmToMinutes(open.close) / 60)) : 0;
-  // Today: only hours that have already passed.
+  // Today: only hours that have already started (the current one included); an earlier visit cannot lie in the future.
   const hours = Array.from({ length: Math.max(0, last - first) }, (_, k) => first + k).filter((h) => dayOffset > 0 || h <= p.hour);
 
+  /**
+   * Saves a `past` report stamped at the start of the chosen hour in library time (no noise, amenities,
+   * note or GPS proof), uploads it like a check-in when sharing is on, then goes back.
+   */
   const submit = async () => {
     if (level === null || hour === null) return;
     const ci: CheckIn = {

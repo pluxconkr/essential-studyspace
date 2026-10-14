@@ -1,16 +1,24 @@
 /**
  * Typical-day occupancy curves — the cold-start prior. Per-kind estimates, clearly labelled
  * "estimate" everywhere they appear, until a venue declares its own curve or real reports exist.
- * Values are relative occupancy 0..1 by local hour; the term phase scales them.
+ * Values are relative occupancy 0..1 by local hour; the term phase scales the estimates.
+ *
+ * "Real reports" is the learned baseline: per-venue buckets (weekday / Saturday / Sunday × local hour)
+ * that the relay aggregates from student reports and the phone downloads from GET /api/pattern. An hour
+ * switches from the estimate to the students' weighted mean once its bucket meets PATTERN_MIN, and is
+ * then used as is (no term multiplier). typicalPct() is the one baseline read by fusion's prior
+ * (levels.ts), arrival predictions and the spot page's typical-day chart, so all three learn together.
+ * Pure functions over New Jersey local time; no storage or network.
  */
 import { t } from '@/i18n';
 
 import { formatMinutesShort, zonedParts } from './time';
 import type { DayType, PatternBucket, Venue, VenueKind, VenuePattern } from './types';
 
+/** Where the academic term is. The app sets 'regular', or 'finals' under the demo finals scenario (useTermPhase); nothing sets 'break' yet. */
 export type TermPhase = 'regular' | 'finals' | 'break';
 
-/** Weekday curves (index = hour 0..23). Weekend variants are flatter and later. */
+/** Weekday curves (index = hour 0..23), hand-estimated per venue kind. Weekend variants are flatter and later. */
 const WEEKDAY: Record<VenueKind, number[]> = {
   //            0     1     2     3     4     5     6     7     8     9     10    11    12    13    14    15    16    17    18    19    20    21    22    23
   library: [0.25, 0.15, 0.1, 0.05, 0.05, 0.05, 0.05, 0.08, 0.15, 0.3, 0.45, 0.55, 0.6, 0.68, 0.75, 0.75, 0.7, 0.6, 0.58, 0.62, 0.6, 0.5, 0.4, 0.3],
@@ -19,6 +27,7 @@ const WEEKDAY: Record<VenueKind, number[]> = {
   cafe: [0, 0, 0, 0, 0, 0, 0.1, 0.4, 0.7, 0.75, 0.6, 0.5, 0.55, 0.5, 0.5, 0.45, 0.35, 0.25, 0.15, 0.1, 0.05, 0, 0, 0],
 };
 
+/** Saturday and Sunday share one estimate curve (index = hour 0..23); the learned pattern keeps them apart. */
 const WEEKEND: Record<VenueKind, number[]> = {
   library: [0.15, 0.1, 0.05, 0.02, 0.02, 0.02, 0.02, 0.02, 0.05, 0.1, 0.15, 0.25, 0.35, 0.45, 0.55, 0.6, 0.6, 0.55, 0.5, 0.5, 0.45, 0.35, 0.25, 0.2],
   'public-library': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.35, 0.45, 0.5, 0.5, 0.45, 0.35, 0.2, 0.1, 0, 0, 0, 0, 0],
@@ -26,15 +35,23 @@ const WEEKEND: Record<VenueKind, number[]> = {
   cafe: [0, 0, 0, 0, 0, 0, 0.05, 0.2, 0.45, 0.7, 0.8, 0.75, 0.6, 0.5, 0.45, 0.4, 0.3, 0.2, 0.1, 0.05, 0, 0, 0, 0],
 };
 
-/** A learned bucket replaces the estimate once it holds this many reports from this many distinct days. */
+/**
+ * A learned bucket replaces the estimate once it holds this many reports from this many distinct days.
+ * The distinct-day rule keeps one busy afternoon (or one spammer) from rewriting an hour.
+ */
 export const PATTERN_MIN = { reports: 5, days: 3 } as const;
 
+/** Learned-pattern day type of a weekday (0 = Sunday): 'su', 'sa', or 'wk' for Monday–Friday. The relay buckets reports with this same function. */
 export const dayTypeOf = (weekday: number): DayType => (weekday === 0 ? 'su' : weekday === 6 ? 'sa' : 'wk');
 
 /** A bucket counts once it has met PATTERN_MIN. */
 const isLearned = (b: PatternBucket): b is PatternBucket & { pct: number } => b.pct !== null && b.n >= PATTERN_MIN.reports && b.days >= PATTERN_MIN.days;
 
-/** The learned bucket for an instant, or null while it has not met PATTERN_MIN. */
+/**
+ * The learned bucket for an instant, or null while it has not met PATTERN_MIN. Looked up by the NJ-local day type
+ * and hour of `at`, so a weekday bucket never answers for a weekend. Also the yes/no behind LiveLevel.prior = 'reports'
+ * and the underlined hours of the spot page's typical-day chart.
+ */
 export function learnedBucket(pattern: VenuePattern | null | undefined, at: number): (PatternBucket & { pct: number }) | null {
   if (!pattern) return null;
   const p = zonedParts(at);
@@ -42,7 +59,11 @@ export function learnedBucket(pattern: VenuePattern | null | undefined, at: numb
   return isLearned(b) ? b : null;
 }
 
-/** How many of the day's 24 buckets are learned for the day type of `at`, and the reports behind them. */
+/**
+ * How many of the day's 24 buckets are learned for the day type of `at`, and the reports behind them.
+ * Counts all 24 hours, open or not, while the chart underlines open hours only. Feeds the spot page footer
+ * ("N underlined hours come from M student reports").
+ */
 export function learnedHours(pattern: VenuePattern | null | undefined, at: number): { hours: number; reports: number } {
   if (!pattern) return { hours: 0, reports: 0 };
   let hours = 0;
@@ -56,19 +77,26 @@ export function learnedHours(pattern: VenuePattern | null | undefined, at: numbe
   return { hours, reports };
 }
 
-/** Finals push every library toward full; breaks empty the campus. Capped at 1. */
+/** Finals push every spot toward full; breaks empty the campus. Scales the estimate only (a learned hour is used as is); the result is capped at 1. */
 export const TERM_MULTIPLIER: Record<TermPhase, number> = { regular: 1, finals: 1.35, break: 0.4 };
 
 /** "university library" — in the current language. */
 export const kindLabel = (kind: VenueKind) => t(`kind.${kind}` as const);
 
-/** The 24-value curve a venue uses: its own declared curve, else the per-kind estimate. */
+/**
+ * The 24-value curve a venue uses: its own declared curve, else the per-kind estimate. A declared curve serves
+ * every day of the week and is ignored unless it has exactly 24 values; `weekend` only picks the estimate table.
+ */
 export function curveFor(venue: Pick<Venue, 'kind' | 'typicalCurve'>, weekend: boolean): number[] {
   if (venue.typicalCurve && venue.typicalCurve.length === 24) return venue.typicalCurve;
   return (weekend ? WEEKEND : WEEKDAY)[venue.kind];
 }
 
-/** The learned student pattern for this hour when it has enough data; else linear interpolation on the curve at a local time, scaled by term phase. */
+/**
+ * The learned student pattern for this hour when it has enough data; else linear interpolation on the curve at a local time, scaled by term phase.
+ * The one typical value behind fusion's prior, arrival predictions and the spot chart, so all three learn together.
+ * Interpolates between hour h and h + 1 by the minute (23:xx blends toward 0:00 of the same curve); clamped to 0..1.
+ */
 export function typicalPct(venue: Pick<Venue, 'kind' | 'typicalCurve'>, at: number, phase: TermPhase = 'regular', pattern?: VenuePattern | null): number {
   const learned = learnedBucket(pattern, at);
   if (learned) return learned.pct;
@@ -81,7 +109,11 @@ export function typicalPct(venue: Pick<Venue, 'kind' | 'typicalCurve'>, at: numb
   return Math.min(1, Math.max(0, (a + (b - a) * frac) * TERM_MULTIPLIER[phase]));
 }
 
-/** Plain-English explanation of the estimate for the "Why this estimate?" screen. */
+/**
+ * Plain-language explanation of the typical value at `at`, shown under the level section of the "Why this ranking?" screen:
+ * the students' average with its report and day counts when the hour is learned, else the estimate's share, whose curve
+ * it is, and any term multiplier. In the current language.
+ */
 export function explainTypical(venue: Pick<Venue, 'kind' | 'typicalCurve' | 'curveSource'>, at: number, phase: TermPhase, pattern?: VenuePattern | null): string {
   const p = zonedParts(at);
   const weekend = p.weekday === 0 || p.weekday === 6;

@@ -1,7 +1,7 @@
 /**
- * Screen scaffolds in the iOS idiom.
- *  - OFFLINE banner: never hidden while offline.
- *  - Tab screens: large title with a one-line status under it.
+ * Screen scaffolds in the iOS idiom. Every screen in src/app (all but the layouts and the api routes) renders inside `Screen`.
+ *  - OFFLINE banner: never hidden while offline (every Screen draws it above everything else).
+ *  - Tab screens: large title with a subtitle or note; the Now tab adds the one-line live-level status and pull-to-refresh.
  *  - Sub screens: compact nav bar with back chevron; optional large title below.
  */
 import { useRouter } from 'expo-router';
@@ -17,13 +17,23 @@ import { useRealNow } from '@/store/derived';
 import { Icon } from './icons';
 import { GUTTER, MIN_TAP, colors, type } from './theme';
 
+/** The expo-router router object, as returned by useRouter(). */
 type Router = ReturnType<typeof useRouter>;
-/** Go back if there is history; otherwise go home (deep links, tests). */
+/**
+ * Go back if there is history; otherwise go home (deep links, tests). Used by the Back button and by sub-screens
+ * that close themselves: Save / Cancel on Preferences, Close / Done on "Why this ranking?", and after posting a
+ * check-in or an earlier-visit report.
+ */
 export function goBackOr(router: Router) {
   if (router.canGoBack()) router.back();
   else router.replace('/');
 }
 
+/**
+ * Grey "OFFLINE MODE · saved hours and your check-ins" bar, shown while the network is known to be down or the demo
+ * "Simulate no signal" switch is on (then suffixed "· simulated"). Renders nothing online or while the network
+ * state is still unknown at launch (isOfflineNow). Carries the alert accessibility role and a polite live region.
+ */
 export function OfflineBanner() {
   const offline = useAppState((s) => isOfflineNow(s));
   const simulated = useAppState((s) => s.settings.simulateOffline);
@@ -39,7 +49,12 @@ export function OfflineBanner() {
   );
 }
 
-/** One-line status under a tab title: online/offline and the last live-level check. */
+/**
+ * One-line status under a tab title: online/offline and the last live-level check.
+ * In order: "Checking live levels…" while refreshing, "No signal · saved hours and typical pattern",
+ * "Live levels checked 5 min ago", or "Typical pattern · live levels not checked yet". The age uses the device
+ * clock (useRealNow), not the demo clock, because the crowd cache's fetchedAt is a device timestamp.
+ */
 export function StatusLine() {
   const offline = useAppState((s) => isOfflineNow(s));
   const checked = useAppState((s) => s.cacheMeta.crowd?.fetchedAt ?? null);
@@ -49,6 +64,7 @@ export function StatusLine() {
   return <Text style={styles.status}>{text}</Text>;
 }
 
+/** Compact nav bar: "‹ Back" (goBackOr), a centred one-line title and an optional right-hand slot. */
 export function BackHeader({ title, right }: { title: string; right?: ReactNode }) {
   const router = useRouter();
   return (
@@ -65,6 +81,11 @@ export function BackHeader({ title, right }: { title: string; right?: ReactNode 
   );
 }
 
+/**
+ * The page every screen renders inside: safe-area top inset, OFFLINE banner, optional nav bar, then a scroll
+ * view holding the large-title header and `children` inset by the page gutter. Buttons take a tap while the
+ * keyboard is up (goal and note fields), instead of the first tap only dismissing it.
+ */
 export function Screen({
   children,
   title,
@@ -77,7 +98,7 @@ export function Screen({
   refreshing = false,
 }: {
   children: ReactNode;
-  /** Sub-screen nav bar title (renders a back button). */
+  /** Sub-screen nav bar title (renders a back button). Left blank in the bar when it equals `largeTitle`, so the words are not shown twice. */
   title?: string;
   /** Large page title (tab screens or sub-screens). */
   largeTitle?: string;
@@ -89,6 +110,7 @@ export function Screen({
   testID?: string;
   /** Pull-to-refresh handler (tab screens). */
   onRefresh?: () => void;
+  /** Keeps the pull-to-refresh indicator showing while a refresh runs. */
   refreshing?: boolean;
 }) {
   const insets = useSafeAreaInsets();

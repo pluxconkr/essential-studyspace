@@ -1,3 +1,10 @@
+/**
+ * Tab bar for the three main screens: Now (`index`), Map and Focus. This group is the root stack's
+ * anchor, so every pushed screen sits on top of it.
+ * Uses expo-router's JavaScript tabs (React Navigation bottom tabs) styled like a UIKit tab bar.
+ * Each tab mounts on its first visit, not at launch (docs/perf.md). While a focus session is running,
+ * the Focus icon turns green with a dot and its accessibility label says so.
+ */
 import { Tabs } from 'expo-router/js-tabs';
 import { Platform, StyleSheet, View } from 'react-native';
 
@@ -6,10 +13,15 @@ import { useAppState } from '@/store/appStore';
 import { Icon, type IconName } from '@/ui/icons';
 import { colors, type } from '@/ui/theme';
 
+/** One tab-bar glyph at the standard 24 pt; callers pass the filled variant for the focused tab and the outline one otherwise. */
 function TabIcon({ name, color }: { name: IconName; color: string }) {
   return <Icon name={name} size={24} color={color} weight="medium" />;
 }
 
+/**
+ * The bottom tab navigator. Its only store read is whether a focus session is running (one exists and is
+ * not paused), which recolours the Focus icon, adds the dot and switches its accessibility label.
+ */
 export default function TabLayout() {
   const running = useAppState((s) => !!s.session && !s.session.pausedAt);
   return (

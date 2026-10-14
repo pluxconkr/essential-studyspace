@@ -1,6 +1,11 @@
 /**
  * Derived state hooks: live levels, ranking, session block, focus stats. Pure derivations over
  * the store plus a slow clock tick so time-based values advance without user interaction.
+ *
+ * This is where the domain functions (fuse, rankVenues, blockAt, the focus stats) meet the store.
+ * Nothing here writes storage or calls the network. Two clocks: useNow is the app clock (device time
+ * plus the demo offset) for hours, levels and sessions; useRealNow is the device clock for facts stamped
+ * in device time. Demo-scenario effects (the finals exception and term phase) are applied here, never stored.
  */
 import { useEffect, useMemo, useState } from 'react';
 
@@ -42,11 +47,18 @@ export function useRealNow(ms = 30_000): number {
   return now;
 }
 
+/**
+ * Term phase for the typical curves: 'finals' (the venue-declared or per-kind curve scaled ×1.35; hours with
+ * enough learned data unaffected) while the finals demo scenario runs, else 'regular'. Nothing else sets the phase, so 'break' never occurs here.
+ */
 export function useTermPhase(): TermPhase {
   return useAppState((s) => (s.settings.demoScenario === 'finals' ? 'finals' : 'regular'));
 }
 
-/** Venues with demo-scenario exceptions applied (labelled; never persisted). */
+/**
+ * Venues with demo-scenario exceptions applied (labelled; never persisted). Only the finals scenario
+ * changes anything: Alexander Library gets an all-dates "open 24 hours" exception marked isDemo.
+ */
 export function useVenues(): Venue[] {
   const venues = useAppState((s) => s.venues);
   const scenario = useAppState((s) => s.settings.demoScenario);
@@ -60,12 +72,17 @@ export function useVenues(): Venue[] {
   }, [venues, scenario]);
 }
 
+/** One venue by id from useVenues (demo exceptions included); null for an unknown or missing id. */
 export function useVenue(id: string | undefined): Venue | null {
   const venues = useVenues();
   return useMemo(() => venues.find((v) => v.venueId === id) ?? null, [venues, id]);
 }
 
-/** Own check-ins expressed as anonymous reports, with the weight the relay would assign. */
+/**
+ * Own check-ins expressed as anonymous reports, with the weight the relay would assign, grouped by venue id.
+ * Earlier-visit ('past') reports are left out: they shape only the relay's learned baseline and must never
+ * count as "right now" here, nor hide a relay report as a supposed echo.
+ */
 function ownReports(checkIns: readonly CheckIn[]): Record<string, CrowdReport[]> {
   const out: Record<string, CrowdReport[]> = {};
   for (const c of checkIns) {
@@ -74,11 +91,15 @@ function ownReports(checkIns: readonly CheckIn[]): Record<string, CrowdReport[]>
   return out;
 }
 
+/** One venue's reports: own first, then relay and demo rows, dropping rows that match one of our own (our check-in echoed back by the relay; see dedupeReports). */
 function reportsFor(venueId: string, mine: Record<string, CrowdReport[]>, crowd: CrowdSnapshot | null, demo: Record<string, CrowdReport[]>): CrowdReport[] {
   return dedupeReports(mine[venueId] ?? [], [...(crowd?.reports[venueId] ?? []), ...(demo[venueId] ?? [])]);
 }
 
-/** Every report that counts for one venue: own check-ins, the relay (minus echoes of our own), and demo reports. */
+/**
+ * Every report that counts for one venue: own check-ins, the relay (minus echoes of our own), and demo reports.
+ * Not filtered by age: the spot page's consumers (fuseZones, latestReportDetails) apply their own windows.
+ */
 export function useVenueReports(venueId: string): CrowdReport[] {
   const my = useAppState((s) => s.myCheckIns);
   const crowd = useAppState((s) => s.crowd);
@@ -86,7 +107,11 @@ export function useVenueReports(venueId: string): CrowdReport[] {
   return useMemo(() => reportsFor(venueId, ownReports(my.filter((c) => c.venueId === venueId)), crowd, demo), [my, crowd, demo, venueId]);
 }
 
-/** Fused level for every venue: own check-ins + relay snapshot + demo reports + the typical-pattern prior. */
+/**
+ * Fused level for every venue: own check-ins + relay snapshot + demo reports + the typical-pattern prior.
+ * Keyed by venue id, for the whole directory. Recomputed on the 30-second app clock as well as on new data,
+ * so report decay and freshness advance on their own.
+ */
 export function useLiveLevels(): Record<string, LiveLevel> {
   const venues = useVenues();
   const my = useAppState((s) => s.myCheckIns);
@@ -106,18 +131,28 @@ export function useLiveLevels(): Record<string, LiveLevel> {
   }, [venues, my, crowd, demo, patterns, phase, now]);
 }
 
-/** Learned baselines by venue id, when the phone has downloaded them. */
+/** Learned baselines by venue id, when the phone has downloaded them. Undefined when none is cached; hours then use the per-kind estimate or the venue's own curve. */
 export function usePatterns(): Record<string, VenuePattern> | undefined {
   return useAppState((s) => s.pattern?.patterns);
 }
 
+/** The ranking plus what it was computed from, so screens can show the origin, the free block and the "Why this ranking?" numbers. */
 export interface RankingView extends RankResult {
+  /** The inputs given to rankVenues: origin and its label, prefs, app-clock now, free-block end, term phase, learned patterns. */
   ctx: RankContext;
+  /** Today's free block in progress, or the next one today; null when none is left. */
   gap: ActiveGap | null;
-  /** Where walking times are measured from: GPS, the home station, or the area default. */
+  /** Where walking times are measured from: GPS (a fix inside the area), a station (the home station or the area's default one), or the area's centre. */
   originKind: 'gps' | 'station' | 'area';
 }
 
+/**
+ * The ranking behind the Now tab (also used by Focus, the spot page and "Why this ranking?"): spots in
+ * the student's area that are open on arrival, by score; the rest by next opening. Walks start at the
+ * GPS fix when it lies inside the area's box padded by 0.05° (about 5 km), else the home station, else
+ * the area's default station, else the area's centre. The free block's end feeds the "stays open" term
+ * only while that block is in progress.
+ */
 export function useRanking(): RankingView {
   const venues = useVenues();
   const levels = useLiveLevels();
@@ -139,7 +174,11 @@ export function useRanking(): RankingView {
   }, [venues, levels, prefs, stations, location, patterns, phase, now]);
 }
 
-/** The live session with its current block, ticking once a second while running. */
+/**
+ * The live session with its current block, ticking once a second while running (every 30 s when paused or idle).
+ * The block is computed from absolute timestamps, so it is right again as soon as the app wakes; `now` is the
+ * app-clock instant it was computed for.
+ */
 export function useSessionState(): { session: Session | null; block: BlockState | null; now: number } {
   const session = useAppState((s) => s.session);
   const now = useNow(session && !session.pausedAt ? 1000 : 30_000);
@@ -147,6 +186,11 @@ export function useSessionState(): { session: Session | null; block: BlockState 
   return { session, block, now };
 }
 
+/**
+ * "Your week" numbers from the local focus log: the log itself, the last-7-days summary, the streak, focus by
+ * hour of day with the best 2-hour window, and focus per spot. Re-evaluated every minute so days roll over.
+ * Computed on the phone and never shared.
+ */
 export function useFocusStats() {
   const log = useAppState((s) => s.focusLog);
   const venues = useVenues();

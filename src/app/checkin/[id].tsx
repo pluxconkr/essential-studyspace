@@ -1,6 +1,15 @@
 /**
  * S-05 Check-in · ONE tap is a complete check-in. Everything else is optional.
  * Presence proof is a distance, not a trail: GPS is read once and discarded.
+ *
+ * Route `/checkin/[id]`, pushed from the spot page, the Now tab's arrival prompt and its "check in
+ * where I am" button, and the `studyspace://checkin/<id>` deep link. Posting goes through
+ * `submitCheckIn`: the record is saved on the phone first, then uploaded right away when sharing is on
+ * and there is a signal, or by a later refresh if it could not be sent then. With sharing off, or in a
+ * demo scenario, it never leaves the phone. The fix itself is never saved (it lives in store memory, where
+ * the ranking and the map also use it): the record keeps only the rounded distance and the GPS accuracy,
+ * and the relay receives only the weight derived from them. With no fix, or far from the door, the student
+ * can post a `remote` report instead of a `live` one.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -22,7 +31,9 @@ import { LevelRows, ZonePicker } from '@/ui/level-widgets';
 import { Button, Callout, Cell, Field, Group, SectionFooter, SectionHeader, Segmented, Toggle } from '@/ui/primitives';
 import { colors } from '@/ui/theme';
 
+/** Noise answers offered after "Skip": 0 silent · 1 murmur · 2 chatty · 3 loud. */
 const NOISE: NoiseReport[] = [0, 1, 2, 3];
+/** The "What's available" toggles: the amenity each one reports and its `checkin.avail.*` label key. */
 const AVAILABLE: { a: Amenity; key: 'outlets' | 'solo' | 'big' | 'group' | 'wifi' | 'food' }[] = [
   { a: 'outlets', key: 'outlets' },
   { a: 'solo-desks', key: 'solo' },
@@ -32,6 +43,15 @@ const AVAILABLE: { a: Amenity; key: 'outlets' | 'solo' | 'big' | 'group' | 'wifi
   { a: 'food-nearby', key: 'food' },
 ];
 
+/**
+ * The check-in form for the `id` route param, or a "Not in the saved directory" callout for an unknown id.
+ * The level is the only required answer; zone, noise, what is available and a private note are optional,
+ * followed by presence and sharing. Asks for one GPS fix on mount and grades it with `proofStrength`:
+ * "verified" means strength ≥ 0.85, i.e. within 150 m of the venue after subtracting the GPS accuracy.
+ * Fixes older than 10 minutes are ignored. While presence is unconfirmed (no fix, or more than 300 m away)
+ * the "I'm not at the spot" switch is offered; with it on, the main button reads "Post report" and the
+ * start-a-session button is hidden.
+ */
 export default function CheckInScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -53,6 +73,8 @@ export default function CheckInScreen() {
 
   useEffect(() => {
     // Read once at mount; a later status change must not request another fix.
+    // Only from idle/granted: a denied permission is not asked again, a request in flight is not doubled,
+    // and a reading that failed ('unavailable') is not retried here.
     const st = getState().locationStatus;
     if (st === 'idle' || st === 'granted') void acquireLocation();
   }, []);
@@ -78,8 +100,16 @@ export default function CheckInScreen() {
 
   // Without a fix, or far from the door, the student may say so; the report is then weighed as hearsay.
   const unconfirmed = distanceM === null || distanceM > 300;
+  // The toggle only counts while presence is unconfirmed: a fix that later puts the student within 300 m makes it a live check-in again.
   const isRemote = remote && unconfirmed;
 
+  /**
+   * The full local record; called only once a level is chosen. `at` is the app clock, so a check-in made
+   * during a demo scenario is fresh against the scenario's shifted levels (in live mode both clocks agree).
+   * `synced` starts true when sharing is off or a demo is running, which keeps the record out of the upload
+   * queue for good. `shownLevel` is what the app was showing, for the shown-vs-found metric on Your week.
+   * The note (trimmed, 240 characters at most) is never part of the relay copy.
+   */
   const build = (): CheckIn => ({
     checkInId: newId('ci'),
     kind: isRemote ? 'remote' : 'live',
@@ -96,12 +126,18 @@ export default function CheckInScreen() {
     shownLevel: levels[venue.venueId]?.open ? levels[venue.venueId].level : null,
   });
 
+  /** Saves the check-in (uploading it now when sharing is on and online), then goes back. */
   const submit = async () => {
     if (level === null) return;
     await submitCheckIn(build());
     goBackOr(router);
   };
 
+  /**
+   * Posts the check-in and, unless a session is already in progress (running or paused), starts a 50/10 × 3
+   * focus session at this spot and zone (linked to the check-in) and schedules its block-change notifications
+   * when notifications are on. Either way it replaces this screen with the Focus tab.
+   */
   const submitAndStart = async () => {
     if (level === null) return;
     const ci = build();

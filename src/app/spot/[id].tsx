@@ -1,6 +1,16 @@
 /**
  * S-04 Spot detail · level with its honesty line, hours with exceptions, typical day, zones,
  * getting there, accessibility, watch, your own check-ins, and where the data came from.
+ * It also shows the predicted level on arrival, amenities and, for campus libraries and student centers
+ * open until 11 PM or later today, the campus safety numbers.
+ *
+ * Route `/spot/[id]`, pushed from the Now list, the Map tab (a pin's card and the spot list), the Focus
+ * tab's session spot and the `studyspace://spot/<id>` deep link. Everything is derived on the phone from
+ * the store (directory, own check-ins, the cached relay snapshot and learned pattern), so the page renders
+ * in full with no signal. Its only write is the watch toggle (saved on the phone; refreshes and the
+ * background poll then send a local notification when students at the spot report it Chill or emptier).
+ * It links on to check-in, "Why this ranking?" and the earlier-visit report, and hands the address,
+ * phone number and website to the OS.
  */
 import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -23,17 +33,31 @@ import { Button, Callout, Cell, Group, KeyValue, SectionFooter, SectionHeader, S
 import { Screen } from '@/ui/Screen';
 import { CELL_PAD, GUTTER, colors, type } from '@/ui/theme';
 
+/** The venue's entry rule in words: open to everyone, student ID required, or public by day with ID late. */
 const accessLabel = (a: Venue['access']) => t(`spot.access.${a}` as const);
 
-/** "Rutgers University Libraries (LibCal hours, …); …" → "Rutgers University Libraries" */
+/**
+ * The publisher part of `verifiedBy`, for the hours footer and the About row:
+ * "Rutgers University Libraries (LibCal hours, …); …" → "Rutgers University Libraries"
+ */
 const sourceLabel = (v: Venue) => v.verifiedBy.split(/[;(]/)[0].trim();
 
+/** A stay length in minutes as "2 h 30 min", "2 h" or "45 min" (the "open … after" part of the arrival line). */
 const hoursText = (min: number) => (min >= 60 ? (min % 60 ? t('common.hoursMinShort', { h: Math.floor(min / 60), m: min % 60 }) : t('common.hoursShort', { h: Math.floor(min / 60) })) : t('common.min', { n: min }));
 
+/** An instant as a short library-time clock ("9 PM", "2:30 AM"), for "Until …" in the hours header. */
 const formatClockShort = (ms: number) => formatMinutesShort(zonedParts(ms).minutesOfDay);
 
+/** A zone's noise policy (a house rule, not a report): silent → "silent", low → "low murmur", chatty → "conversation ok". */
 const noiseText = (n: Venue['zones'][number]['noise']) => (n === 'silent' ? t('noise.0') : n === 'low' ? t('noise.1') : t('noise.chattyOk'));
 
+/**
+ * Spot detail for the `id` route param, or a "Not in the saved directory" callout for an unknown id.
+ * Combines the fused live level, this spot's ranking row (walk and predicted level on arrival; null when
+ * the spot is outside the student's chosen area, so those lines are left out), per-zone levels for zones
+ * with a report in the last 90 minutes, and the learned pattern for the typical-day chart. All times use
+ * the app clock (`useNow`), so a demo scenario moves hours, levels and the chart together.
+ */
 export default function SpotScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -74,7 +98,9 @@ export default function SpotScreen() {
   const late = opensLate(venue, now);
   const learned = learnedHours(pattern, now);
 
+  /** Hands a URL to the OS (maps, dialer, browser); a missing handler is ignored. */
   const open = (url: string) => Linking.openURL(url).catch(() => {});
+  /** Opens the address in Apple Maps (iOS) or the default maps app (Android, `geo:`); web gets OpenStreetMap at the venue's coordinates. */
   const openMaps = () => {
     const q = encodeURIComponent(venue.address);
     open(Platform.select({ ios: `maps:0,0?q=${q}`, android: `geo:0,0?q=${q}`, default: `https://www.openstreetmap.org/?mlat=${venue.lat}&mlon=${venue.lng}#map=17/${venue.lat}/${venue.lng}` }));
@@ -223,6 +249,7 @@ export default function SpotScreen() {
   );
 }
 
+/** Accessibility facts are tri-state: null means the venue has not confirmed it, shown as "Not confirmed" rather than "No". */
 const yesNo = (v: boolean | null) => (v === true ? t('common.yes') : v === false ? t('common.no') : t('common.notConfirmed'));
 
 const styles = StyleSheet.create({

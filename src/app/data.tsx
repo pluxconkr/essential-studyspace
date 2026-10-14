@@ -1,6 +1,12 @@
 /**
  * S-09 Offline data · makes "this app works offline" a claim you can verify: what is saved, how big,
  * and when. Also hosts sharing, notifications, the demo controls (clearly labelled), and reset.
+ *
+ * Route `/data`, pushed from Your week's settings and from Privacy. Besides the saved-items table
+ * (directory, maps, live levels, own check-ins, focus log, typical patterns) it runs a manual
+ * `refreshAll`, shows the storage guard's notice (what it gave up when space ran out, or that a save
+ * failed) until it is dismissed, and exports the student's own focus log and check-ins through the
+ * share sheet.
  */
 import { useState } from 'react';
 import { Alert, Platform, Share, Text } from 'react-native';
@@ -20,9 +26,17 @@ import { Button, Callout, Cell, Group, ProgressBar, ProgressRing, SectionFooter,
 import { Screen } from '@/ui/Screen';
 import { colors, tabular, type } from '@/ui/theme';
 
+/** A size as "1.2 GB", "3.4 MB" or whole KB (never below 1 KB). Most callers pass JSON string lengths, which approximate bytes. */
 const kb = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+/** What the storage guard gave up, in words, for the "storage full" notice. */
 const droppedLabel = (d: 'pattern-cache' | 'crowd-cache' | 'old-checkins') => (d === 'pattern-cache' ? t('data.dropped.pattern') : d === 'crowd-cache' ? t('data.dropped.crowd') : t('data.dropped.checkins'));
 
+/**
+ * The offline-data screen. One row per saved item with its size, age and an amber "Old" flag (a
+ * downloaded directory after 30 days, live levels after an hour, typical patterns after 7 days), and a
+ * ring at the top counting how many items are on the phone. Free disk space is shown only where the
+ * platform reports it.
+ */
 export default function DataScreen() {
   const cacheMeta = useAppState((s) => s.cacheMeta);
   const venues = useAppState((s) => s.venues);
@@ -55,8 +69,14 @@ export default function DataScreen() {
   ];
   const savedCount = rows.filter((r) => r.saved).length;
 
+  /**
+   * Manual refresh: uploads pending check-ins when sharing is on, fetches live levels for the area, the
+   * directory feed (if configured) and patterns (if older than 6 h), and may post watch notifications.
+   * Keeps the result for the summary line under the button.
+   */
   const run = async () => setLast(await refreshAll());
 
+  /** Opens the OS share sheet with the focus log and own check-ins (notes included) as JSON; the student picks where it goes. */
   const exportLog = async () => {
     const payload = JSON.stringify({ exportedAt: new Date().toISOString(), focusLog, checkIns: myCheckIns }, null, 2);
     try {
@@ -66,7 +86,13 @@ export default function DataScreen() {
     }
   };
 
+  /** Asks first (a browser confirm on web, a destructive alert elsewhere), then erases everything. */
   const confirmReset = () => {
+    /**
+     * Clears local storage and the downloaded directory, returns to the live scenario (no clock offset, no
+     * demo reports) and re-hydrates the store. The onboarded flag is gone too, so the root layout's guard
+     * brings back onboarding.
+     */
     const doReset = () => {
       resetAllData();
       applyDemoScenario('live');

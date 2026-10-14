@@ -1,6 +1,11 @@
 /**
  * S-01 Now (tab 1, home). Answers only: where is there a seat right now, and will there be one when I arrive.
  * Layout follows Apple Weather: large title, status line, grouped content. Never a bare percentage.
+ *
+ * Everything is derived on the phone from the store (`useRanking`, `useFocusStats`): today's free block,
+ * an arrival prompt, closing-soon and open-past-midnight callouts, the six best spots open on arrival
+ * (level now and on arrival, walk), spots closed now or by the time you would get there, and your week.
+ * Pull to refresh runs `refreshAll`; nothing on screen waits for it.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
@@ -24,6 +29,11 @@ import { Button, Callout, Cell, Group, SectionHeader, Subhead } from '@/ui/primi
 import { Screen } from '@/ui/Screen';
 import { colors } from '@/ui/theme';
 
+/**
+ * The home tab. Two clocks: `now` is the ranking's app clock (device time + demo offset), used for hours,
+ * levels and the free block; `realNow` is the device clock, which the arrival prompt needs because GPS
+ * fixes are stamped in device time.
+ */
 export default function NowScreen() {
   const router = useRouter();
   const ranking = useRanking();
@@ -46,27 +56,38 @@ export default function NowScreen() {
     if (demo === 'finals' || demo === 'quiet' || demo === 'late' || demo === 'live') applyDemoScenario(demo);
   }, [demo]);
 
-  // Standing at a spot with no report there in the last 30 minutes → offer a one-tap check-in.
+  // Standing at a spot (fresh GPS fix, within about 75 m) without having checked in there from the spot in
+  // the last 30 minutes → offer a one-tap check-in. Only spots in the ranking's area count.
   const arrival = useMemo(() => arrivalCandidate(venues.filter((v) => v.area === area), location, myCheckIns, now, realNow), [venues, area, location, myCheckIns, now, realNow]);
 
+  // Ask for a GPS fix once per launch (the status never returns to 'idle'). Until a fix inside the area
+  // arrives, walking times start at the home station or the area default; the list never waits.
   useEffect(() => {
     if (locStatus === 'idle') void acquireLocation();
   }, [locStatus]);
 
   const note = scenario !== 'live' ? t('demo.clock', { time: formatShort(now) }) : undefined;
+  // "Open" means open on arrival: the six best by score. `closed` (soonest opening first, four at most)
+  // also holds spots that are open now but close before you could arrive; their row says so.
   const top = ranking.open.slice(0, 6);
   const closed = ranking.closed.slice(0, 4);
 
+  // Open now and closing within the hour, soonest first.
   const closingSoon = useMemo(() => ranking.open.filter((r) => isClosingSoon(r.state, now)).sort((a, b) => (minutesToClose(a.state, now) ?? 0) - (minutesToClose(b.state, now) ?? 0)), [ranking.open, now]);
+  // From 6 PM on: spots whose current opening runs past tonight's local midnight.
   const p = zonedParts(now);
   const midnight = zonedToEpoch(p.dateKey, 1440);
   const lateOpen = useMemo(() => (p.minutesOfDay >= 18 * 60 ? ranking.open.filter((r) => (r.state.closesAt ?? 0) > midnight) : []), [ranking.open, midnight, p.minutesOfDay]);
 
+  // Free-block cell: "Free until …" during a block, else the next block later today, else "No free block today"
+  // with a prompt to add blocks. Tapping it opens the free-blocks screen.
   const gap = ranking.gap;
   const gapTitle = gap ? (gap.now ? t('now.freeUntil', { time: formatClock(gap.endsAt), left: formatDuration((gap.endsAt - now) / 1000) }) : t('now.nextGap', { block: formatBlock(gap.block) })) : t('now.noBlock');
   const from = ranking.originKind === 'gps' ? t('now.yourPosition') : ranking.ctx.originLabel;
   const gapSub = gap ? t('now.rankingUntil', { from }) : t('now.addGaps');
 
+  // Target of "Check in where I am": the spot nearest the GPS fix however far (the check-in screen judges
+  // presence), else the top-ranked one; null when the area has no spots.
   const nearestForCheckIn = () => {
     const inArea = ranking.open.concat(ranking.closed);
     if (location) {
@@ -76,6 +97,7 @@ export default function NowScreen() {
     return top[0]?.venue.venueId ?? inArea[0]?.venue.venueId ?? null;
   };
 
+  // Row subtitle: level now · level on arrival, the closing time when open, and "ID" when entry may need a student ID.
   const rowSub = (r: (typeof top)[number]) => {
     const parts = [t('now.rowLevels', { now: levelText(r.live), arrival: levelText(r.arrival) })];
     const until = untilLabel(r.state);

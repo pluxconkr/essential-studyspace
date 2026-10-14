@@ -1,6 +1,11 @@
 /**
  * Building blocks in the iOS grouped-list idiom. No shadows, no borders, no icon backgrounds.
  * 44pt targets, body ≥ 15pt, tabular numerals. No spinners anywhere.
+ *
+ * Every screen in src/app is assembled from these (plus the widgets in this folder). Colours (all but the switch's
+ * off-track grey), text styles and the shared metrics (cell padding, minimum tap size, corner radius) come from
+ * theme.ts; other dimensions are set in this file. They hold no app state: values come in through props and changes
+ * go out through callbacks. The only side effect is a selection haptic from Button, Checkbox and Toggle.
  */
 import * as Haptics from 'expo-haptics';
 import type { ReactNode } from 'react';
@@ -12,21 +17,32 @@ import { CELL_PAD, MIN_TAP, colors, radius, tabular, type } from './theme';
 
 // ---------- Text ----------
 
+/** Props of the text components: any React Native Text prop, plus a style that is merged over the theme style. */
 type TP = TextProps & { children: ReactNode; style?: StyleProp<TextStyle> };
 
+/** Page-title text (`type.largeTitle`, 28 pt bold), announced as a header. */
 export const LargeTitle = ({ children, style, ...r }: TP) => <Text accessibilityRole="header" style={[type.largeTitle, style]} {...r}>{children}</Text>;
+/** Section-title text (`type.title3`, 20 pt semibold), announced as a header. */
 export const Title3 = ({ children, style, ...r }: TP) => <Text accessibilityRole="header" style={[type.title3, style]} {...r}>{children}</Text>;
+/** Emphasised text (`type.headline`, 17 pt semibold). */
 export const Headline = ({ children, style, ...r }: TP) => <Text style={[type.headline, style]} {...r}>{children}</Text>;
+/** Body text (`type.body`, 17 pt); `strong` switches to the headline weight. */
 export const Body = ({ children, style, strong, ...r }: TP & { strong?: boolean }) => <Text style={[strong ? type.headline : type.body, style]} {...r}>{children}</Text>;
+/** Secondary text (`type.subheadline`, 15 pt), the same style Callout gives a string child. */
 export const Subhead = ({ children, style, ...r }: TP) => <Text style={[type.subheadline, style]} {...r}>{children}</Text>;
+/** Small secondary text (`type.footnote`, 13 pt). */
 export const Footnote = ({ children, style, ...r }: TP) => <Text style={[type.footnote, style]} {...r}>{children}</Text>;
+/** Smallest secondary text (`type.caption`, 12 pt). */
 export const Caption = ({ children, style, ...r }: TP) => <Text style={[type.caption, style]} {...r}>{children}</Text>;
-/** Back-compat aliases. */
+/** Back-compat aliases for the names used by the sibling app's primitives: H3 = Headline, Small = Subhead, Xs = Footnote. No screen in this app imports them. */
 export const H3 = Headline;
 export const Small = Subhead;
 export const Xs = Footnote;
 
-/** iOS grouped-list section header: small uppercase secondary text with inset. Optional trailing text. */
+/**
+ * iOS grouped-list section header: small uppercase secondary text with inset. Optional trailing text.
+ * `right` may be a string (styled like the header, e.g. "UNTIL 2 AM" over a spot's hours) or any node.
+ */
 export function SectionHeader({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <View style={styles.sectionHeader}>
@@ -36,16 +52,17 @@ export function SectionHeader({ children, right }: { children: ReactNode; right?
   );
 }
 
-/** Footer text under a group. */
+/** Footer text under a group (footnote style, inset like the header). `style` adjusts it: the Map tab drops the inset, Focus and Offline data centre it. */
 export function SectionFooter({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
   return <Text style={[type.footnote, styles.sectionFooter, style]}>{children}</Text>;
 }
 
 // ---------- Surfaces ----------
 
+/** Callout tints, each mapped to one semantic colour from theme.ts. */
 type Tone = 'red' | 'green' | 'amber' | 'navy' | 'tint';
 
-/** Inset grouped container (white, 12pt radius). Children are usually Cells or padded content. */
+/** Inset grouped container (white, 12pt radius). Children are usually Cells; `padded` insets free-form content such as the level hero, a chart or the timer ring. */
 export function Group({ children, style, padded = false }: { children: ReactNode; style?: StyleProp<ViewStyle>; padded?: boolean }) {
   return <View style={[styles.group, padded && styles.groupPadded, style]}>{children}</View>;
 }
@@ -53,6 +70,9 @@ export function Group({ children, style, padded = false }: { children: ReactNode
 /**
  * A grouped-list cell: optional leading icon (tinted, no background), title + subtitle,
  * trailing value and/or chevron. Separator is inset to the title edge, like UIKit.
+ * `leading` replaces the icon with any node (level bars on the Now tab and in report forms, the saved ring on
+ * Offline data); `trailing` takes a control (switch, segmented control). With `onPress` the cell becomes a button
+ * (or the given `accessibilityRole`) with a pressed highlight; without it the cell is static. `last` drops the separator.
  */
 export function Cell({
   icon,
@@ -116,6 +136,10 @@ export function Cell({
   );
 }
 
+/**
+ * Circular progress, 0–100 (clamped): a grey track and an arc that starts at 12 o'clock, with `children`
+ * centred inside. Used by the focus timer ring and the "saved" ring on Offline data.
+ */
 export function ProgressRing({ pct, size = 56, stroke = 6, color = colors.green, children }: { pct: number; size?: number; stroke?: number; color?: string; children?: ReactNode }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -131,6 +155,7 @@ export function ProgressRing({ pct, size = 56, stroke = 6, color = colors.green,
   );
 }
 
+/** Thin horizontal progress bar, 0–100 (clamped); `label` is what screen readers hear (default "n%"). Shows refresh progress on Offline data. */
 export function ProgressBar({ pct, color = colors.green, label, height = 4 }: { pct: number; color?: string; label?: string; height?: number }) {
   const clamped = Math.max(0, Math.min(100, pct));
   return (
@@ -140,7 +165,7 @@ export function ProgressBar({ pct, color = colors.green, label, height = 4 }: { 
   );
 }
 
-/** Tinted callout with an inline icon: warnings, notes, empty states. */
+/** Callout card with an inline icon: warnings, notes, empty states. `tone` colours only the icon (the card stays a plain padded Group); a string child renders as subheadline text. */
 export function Callout({ icon, title, children, tone = 'tint' }: { icon: IconName; title?: string; children?: ReactNode; tone?: Tone }) {
   const fg = { red: colors.red, green: colors.green, amber: colors.amber, navy: colors.navy, tint: colors.tint }[tone];
   return (
@@ -158,6 +183,11 @@ export function Callout({ icon, title, children, tone = 'tint' }: { icon: IconNa
 
 // ---------- Controls ----------
 
+/**
+ * Button at least 50 pt tall (`sm`: 36 pt, for inline use). Variants: primary (tint fill), secondary (grey fill),
+ * tonal (navy-soft fill), red / green (filled), ghost (text only). Plays a selection haptic on press, ignoring
+ * errors where haptics are unavailable. While `disabled` it is dimmed, announced as disabled and ignores taps.
+ */
 export function Button({
   title,
   onPress,
@@ -199,7 +229,11 @@ export function Button({
   );
 }
 
-/** Reminders-style check control: hollow circle → filled green circle with a check. */
+/**
+ * Reminders-style check control: hollow circle → filled green circle with a check.
+ * Plays a selection haptic and reports the flipped value; the 10 pt hit slop makes the 26 pt glyph a 46 pt target.
+ * Used by GoalRow (session-widgets.tsx).
+ */
 export function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <Pressable
@@ -217,6 +251,10 @@ export function Checkbox({ checked, onChange, label }: { checked: boolean; onCha
   );
 }
 
+/**
+ * A Cell with an iOS-style switch on the right (green when on); `hint` is the cell subtitle. Only the switch
+ * takes taps, not the whole row. Plays a selection haptic and reports the flipped value.
+ */
 export function Toggle({ label, value, onChange, hint, icon, last }: { label: string; value: boolean; onChange: (v: boolean) => void; hint?: string; icon?: IconName; last?: boolean }) {
   return (
     <Cell
@@ -241,6 +279,10 @@ export function Toggle({ label, value, onChange, hint, icon, last }: { label: st
   );
 }
 
+/**
+ * iOS segmented control: pick one of a few values (map area and layer, noise, weekday, demo scenario).
+ * Labels drop to the smaller control size when four or more options share the row; announced as a radio group.
+ */
 export function Segmented<T extends string | number>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label?: string }) {
   return (
     <View style={styles.segmented} accessibilityRole="radiogroup" accessibilityLabel={label}>
@@ -257,7 +299,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
 }
 
 
-/** Single-line text field inside a group (iOS Settings style). */
+/** Single-line text field inside a group (iOS Settings style). The placeholder doubles as the accessibility label. Used for focus goals and the check-in note. */
 export function Field({ value, onChangeText, placeholder, last, icon, onSubmitEditing, returnKeyType, maxLength, testID }: { value: string; onChangeText: (v: string) => void; placeholder?: string; last?: boolean; icon?: IconName; onSubmitEditing?: () => void; returnKeyType?: TextInputProps['returnKeyType']; maxLength?: number; testID?: string }) {
   return (
     <View style={styles.cell}>
@@ -280,7 +322,11 @@ export function Field({ value, onChangeText, placeholder, last, icon, onSubmitEd
   );
 }
 
-/** Key / value row for provenance blocks. */
+/**
+ * Key / value row: label on the left, the value right-aligned in tabular figures and selectable so it can be
+ * copied. Used for a spot's week hours, accessibility and sources (provenance), the Your week summary, and the
+ * numbers on "Why this ranking?".
+ */
 export function KeyValue({ k, v, last }: { k: string; v: string; last?: boolean }) {
   return (
     <View style={[styles.kv, !last && styles.cellSeparator]}>
