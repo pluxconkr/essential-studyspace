@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "createdAt": "2026-10-04T07:31:36.339Z",
+  "updatedAt": "2026-10-05T15:21:32.912Z",
+  "briefPath": ".omc/ultragoal/brief.md",
+  "goalsPath": ".omc/ultragoal/goals.json",
+  "ledgerPath": ".omc/ultragoal/ledger.jsonl",
+  "claudeGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-inventory",
+      "title": "Inventory",
+      "objective": "Catalogue every installed plugin, skill, agent and MCP tool available in this session into docs/tooling.md and mark which ones this run uses (verify, ai-slop-cleaner, code-review, visual-verdict, designer and code-reviewer agents).",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-04T07:35:43.712Z",
+      "startedAt": "2026-10-04T07:31:36.514Z",
+      "completedAt": "2026-10-04T07:35:43.712Z",
+      "evidence": ".omc/ultragoal/tooling.md (7 plugins, 48+15 skills, 19 agents, ~57 MCP tools, hooks per plugin, usage plan per stage); claude plugin list confirms all enabled"
+    },
+    {
+      "id": "G002-gap-analysis",
+      "title": "Gap analysis",
+      "objective": "Compare the shipped app with ../docs/2_NewJersey_1.HTM (Phase 1 MVP cut §16, screen inventory §3, core flows §4, non-functional §12, safety §13, metrics §17) and write docs/gap-analysis.md: implemented / partial / missing / deferred per item, each with a reason and a decision for this run.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-04T07:46:56.592Z",
+      "startedAt": "2026-10-04T07:35:43.853Z",
+      "completedAt": "2026-10-04T07:46:56.592Z",
+      "evidence": "docs/gap-analysis.md: Phase 1 §16, §3 screens, §4 flows, §12 NFR, §13 safety, §17/§19 items tabled with status + decision; independent analyst cross-check merged (6 correctness defects accepted); 14-item G005 work list"
+    },
+    {
+      "id": "G003-design-audit",
+      "title": "Design audit",
+      "objective": "Screenshot every screen and state on the iOS Simulator, score each against the iOS grouped-list idiom (type scale, spacing, colour, icons, copy, line counts, empty states) and write docs/design.md with the design direction plus a concrete inconsistency list.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-04T07:55:07.872Z",
+      "startedAt": "2026-10-04T07:46:56.731Z",
+      "completedAt": "2026-10-04T07:55:07.872Z",
+      "evidence": "docs/design.md: direction, type scale (one token table), component rules, 24-row screenshot audit (56 captures: every screen, 3 demo scenarios, 4 map areas, AX-large), 11-item G004 work list"
+    },
+    {
+      "id": "G004-design-system-fixes",
+      "title": "Design system fixes",
+      "objective": "Make every screen match docs/design.md: one type scale with no ad-hoc fontSize outside theme.ts, consistent cell subtitle and section header/footer rules, segmented sizing, demo labelling, empty states; verify with a screenshot pass plus tsc, lint and jest.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-04T08:08:40.763Z",
+      "startedAt": "2026-10-04T07:55:08.012Z",
+      "completedAt": "2026-10-04T08:08:40.763Z",
+      "evidence": "theme.ts is the only source of type sizes (12 new tokens, 0 literals elsewhere); decorative icons hidden from VoiceOver; root remounts on font-scale change; segmented sizing + area check list; copy/date/icon/title fixes per docs/design.md; 3 re-shoot passes (audit2/audit3) verified; tsc+lint clean, 67 tests"
+    },
+    {
+      "id": "G005-phase-1-gaps",
+      "title": "Phase 1 gaps",
+      "objective": "Close the gaps marked 'do now' in docs/gap-analysis.md within the spec's Phase 1 cut, each with tests.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-04T08:54:07.517Z",
+      "startedAt": "2026-10-04T08:08:40.901Z",
+      "completedAt": "2026-10-04T08:54:07.517Z",
+      "evidence": "14/14 gap-analysis items: confidence rules (unverified→low, stale→low), own-report dedupe, per-zone levels, relay carries noise/amenities, watch fixes + 5-min foreground refresh + background poll, GPS not persisted, dev-only demo links, relay limit 300/10min, Chang + Math&Physics added (19 venues), open-late map layer, arrival check-in card, privacy screen, wasted-trip metric, accessibleSeats, campus safety numbers (sourced), EN+ES localisation (~440 keys, device language, iOS locales). tsc+lint clean, 85 tests, simulator captures in EN and ES"
+    },
+    {
+      "id": "G006-optimization",
+      "title": "Optimization",
+      "objective": "Measure startup, re-render frequency, bundle and asset sizes; fix hot spots; run expo-doctor; record before/after numbers in docs/perf.md.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-05T08:30:27.334Z",
+      "startedAt": "2026-10-04T08:54:07.668Z",
+      "completedAt": "2026-10-05T08:30:27.334Z",
+      "evidence": "Profiling workflow (6 lenses + critic, 70 agents, every finding re-measured by 3 reviewers) -> 9 applied: Ionicons kept out of iOS (assets 412,860 B -> 23,136 B; hbc 3,416,303 -> 3,359,600 B, 1432 -> 1412 modules), lazy tabs, React Compiler now compiles AreaMap + CheckInScreen (78 cell renders/30 s -> 0), weekSummary Intl calls 2001 -> 3, zonedParts per-minute memo 481-557 -> 49/0 per tick, refresh stamp bug (2 new tests), relay de-dupes re-sent reports (1 new test), expo-font declared (expo-doctor 21/21), section header wraps at large text. 1 finding rejected after a simulator check (root remount on Dynamic Type is still required; captures audit-g006/05-07 vs 11-13). docs/perf.md records baseline, before/after and the non-changes. tsc + lint clean, 88 tests, simulator re-shot Now/Map/Focus/Spot + accessibility-large."
+    },
+    {
+      "id": "G007-backend-handoff",
+      "title": "Backend handoff",
+      "objective": "Make the app run end-to-end from .env.local alone: finalize .env.example and docs/backend-setup.md listing exactly what the user must supply (Upstash Redis REST URL and token, deployed relay origin), verify boot with and without them, and pass the final gate with ai-slop-cleaner, verification and code-review all clean.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-04T07:31:36.339Z",
+      "updatedAt": "2026-10-05T15:21:32.912Z",
+      "startedAt": "2026-10-05T08:30:27.484Z",
+      "evidence": "docs/backend-setup.md (three values, sources, curl checks, EAS deploy, behaviour without each); .env.example points at it; README deploy section collapsed to the guide, counts/i18n/docs/verify commands updated; verified end to end that the dev server reads .env.local for the API route and that the Redis REST path works against a stub; final gate ai-slop-cleaner + verify + code-review all clean (quality gate attached)",
+      "completedAt": "2026-10-05T15:21:32.912Z"
+    }
+  ],
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/goals.json: G001-inventory Inventory; G002-gap-analysis Gap analysis; G003-design-audit Design audit; G004-design-system-fixes Design system fixes; G005-phase-1-gaps Phase 1 gaps; G006-optimization Optimization; G007-backend-handoff Backend handoff"
+}

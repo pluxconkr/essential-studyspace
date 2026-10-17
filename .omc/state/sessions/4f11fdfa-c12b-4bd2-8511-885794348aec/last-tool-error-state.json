@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"node -e \\\"const p=require('./package.json'); console.log(JSON.stringify({scripts:p.scripts, jest:p.jest}, null, 2))\\\"; ls jest.config.* babel.config.* 2>/dev/null\",\"description\":\"Show jest...",
+  "error": "Exit code 1\n{\n  \"scripts\": {\n    \"start\": \"expo start\",\n    \"android\": \"expo start --android\",\n    \"ios\": \"expo start --ios\",\n    \"web\": \"expo start --web\",\n    \"lint\": \"expo lint\",\n    \"test\": \"jest\",\n    \"test:watch\": \"jest --watchAll\",\n    \"typecheck\": \"tsc --noEmit\"\n  },\n  \"jest\": {\n    \"preset\": \"jest-expo\",\n    \"transformIgnorePatterns\": [\n      \"node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navig...",
+  "timestamp": "2026-10-14T06:05:36.223Z",
+  "retry_count": 1
+}

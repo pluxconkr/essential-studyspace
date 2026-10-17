@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "planId": "crowd-reports",
+  "createdAt": "2026-10-10T00:23:04.568Z",
+  "updatedAt": "2026-10-13T09:05:47.521Z",
+  "briefPath": ".omc/ultragoal/plans/crowd-reports/brief.md",
+  "goalsPath": ".omc/ultragoal/plans/crowd-reports/goals.json",
+  "ledgerPath": ".omc/ultragoal/plans/crowd-reports/ledger.jsonl",
+  "claudeGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-r001-relay",
+      "title": "R001 Relay",
+      "objective": "Report kinds (live/remote/past) with forced weights and windows, per-venue monthly aggregates with distinct-day sets, GET /api/pattern, memory + Redis (pipeline) stores, route tests",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-10T00:23:04.568Z",
+      "updatedAt": "2026-10-13T09:02:27.216Z",
+      "startedAt": "2026-10-10T00:23:17.262Z",
+      "completedAt": "2026-10-13T09:02:27.216Z",
+      "evidence": "src/server/crowdStore.ts, src/app/api/crowd+api.ts, src/app/api/pattern+api.ts; tests crowd-api + pattern-api; verified on dev relay and Redis REST stub"
+    },
+    {
+      "id": "G002-r002-domain",
+      "title": "R002 Domain",
+      "objective": "CheckIn/CrowdReport kind, learned prior with PATTERN_MIN threshold, fuse remote weight + confidence cap, prior 'reports', explain strings, dedupe and wasted-trip rules, unit tests",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-10T00:23:04.568Z",
+      "updatedAt": "2026-10-13T09:02:38.655Z",
+      "startedAt": "2026-10-13T09:02:38.516Z",
+      "completedAt": "2026-10-13T09:02:38.655Z",
+      "evidence": "src/domain/types.ts (ReportKind, pattern types, LiveLevel prior 'reports' + remote), src/domain/curve.ts (PATTERN_MIN 5 reports / 3 days, learnedBucket, learnedHours, explainLearned), src/domain/levels.ts (KIND_WEIGHT, toReport by kind, remote only without live reports and never raising confidence, past never fused, fuseZones skips past), ranking patterns, honesty and arrival live-only; tests levels + phase1-gaps"
+    },
+    {
+      "id": "G003-r003-client-data",
+      "title": "R003 Client data",
+      "objective": "crowdClient post kinds + fetchPattern, patternRepo + cacheMeta pattern, 6-hour refresh step, storage guard order, derived hooks pass the pattern, sanitize old check-ins, tests",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-10T00:23:04.568Z",
+      "updatedAt": "2026-10-13T09:02:38.929Z",
+      "startedAt": "2026-10-13T09:02:38.792Z",
+      "completedAt": "2026-10-13T09:02:38.929Z",
+      "evidence": "src/services/crowdClient.ts (kinds + id on the wire, remote weight kept, fetchPattern shape enforcement), src/data/repos.ts (cacheRepo factory, drop order, kind back-fill on every read path), appStore + derived (pattern slot, usePatterns), src/services/refresh.ts (refreshPattern every 6 h, stamp only after a saved write, submitCheckIn, watchHits without hearsay); tests refresh + storage-guard + crowd-client"
+    },
+    {
+      "id": "G004-r004-screens",
+      "title": "R004 Screens",
+      "objective": "check-in not-at-the-spot toggle, earlier-visit report screen, spot chart learned markers + entry row, honesty labels, offline-data row, privacy line, EN+ES strings, screen tests, simulator captures",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-10T00:23:04.568Z",
+      "updatedAt": "2026-10-13T09:02:39.203Z",
+      "startedAt": "2026-10-13T09:02:39.066Z",
+      "completedAt": "2026-10-13T09:02:39.203Z",
+      "evidence": "check-in 'I'm not at the spot' toggle + earlier-visit entry, src/app/report/[id].tsx, spot chart underline + plural footer + entry row + kind labels, ZonePicker/LevelRows, offline-data pattern row, why footer, EN + ES; screens.test.tsx (4 new); simulator captures audit-reports/01-16"
+    },
+    {
+      "id": "G005-r005-docs-and-final-gate",
+      "title": "R005 Docs and final gate",
+      "objective": "README, backend-setup, gap-analysis, perf and QA updates; ai-slop-cleaner, verify, code-review; final checkpoint",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-10-10T00:23:04.568Z",
+      "updatedAt": "2026-10-13T09:05:47.521Z",
+      "startedAt": "2026-10-13T09:02:39.346Z",
+      "evidence": "README, backend-setup, QA (T10), design, gap-analysis, perf, spec implementation notes updated; final gate clean (quality gate attached); owner commit 99c81af",
+      "completedAt": "2026-10-13T09:05:47.521Z"
+    }
+  ],
+  "claudeObjective": "Complete all ultragoal stories in .omc/ultragoal/plans/crowd-reports/goals.json: G001-r001-relay R001 Relay; G002-r002-domain R002 Domain; G003-r003-client-data R003 Client data; G004-r004-screens R004 Screens; G005-r005-docs-and-final-gate R005 Docs and final gate"
+}

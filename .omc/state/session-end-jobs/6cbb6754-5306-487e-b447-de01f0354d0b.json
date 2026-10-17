@@ -1,0 +1,367 @@
+{
+  "version": 1,
+  "jobId": "c0cda473-c13a-442b-b3a2-17c149c32d77",
+  "sessionId": "6cbb6754-5306-487e-b447-de01f0354d0b",
+  "scopeKey": "84ac7b7e56f15452b8befdd367dcba476c6d526989451cace7d7cd4e597a23a5",
+  "revision": 63,
+  "createdAt": "2026-10-04T07:25:05.455Z",
+  "updatedAt": "2026-10-04T07:25:36.869Z",
+  "producerGraceExpiresAt": "2026-10-04T07:25:35.456Z",
+  "bestEffortDeadlineAt": "2026-10-04T07:26:28.456Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "73707c1c0d5550cdca039538cc580df854e62c05541f4c4b8efe7925123967a4",
+      "payloadDigest": "73707c1c0d5550cdca039538cc580df854e62c05541f4c4b8efe7925123967a4",
+      "sealedAt": "2026-10-04T07:25:35.824Z",
+      "sealedBy": "recovery"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-10-04T07:25:05.470Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "730c8040a9fb1132e212f1a4d4591b84c43431f942d0fb427606efcd47282342",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-04T07:25:35.548Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "e71a2226-8586-463c-aab7-2e7279fa1568",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:35.814Z"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "788c905fb49f1e5570fab626418a516b6fcee0ebce0f94d7428343df1b18ccad",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-10-04T07:25:05.470Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "985e06db7187069fd6dc6a9730d5affad3b1a06d55ff403e2821a5ff9cceba97",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-04T07:25:35.843Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "346e6987-a0e7-4a77-bc05-8bcd1496ea22",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:35.978Z"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "46cf0e83e68f9a49e2a4d50994be00e8ca9ebe487a65d575494c4f70938c622e",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-04T07:25:35.997Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "48ededa4-5751-433f-a04b-0955d6cab84f",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.126Z"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "c39fad5fc65d9e203f8af76b7b804aaeadd36442fc69c23cfd025cb3a1580e6d",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-10-04T07:25:36.144Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "2cfeb757-76f3-491a-af2f-02d4fe3457c7",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.267Z"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "7d839e545ffeaf5791c26b22b01ccbc488cf31ca7f625054d7e151f3f1190747",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-04T07:25:36.287Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "270baf9c-b6cd-41fd-b6d2-aa2a4db2fe57",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.408Z"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "797459f7d2e81b516ce3640326f4af27a079d00d448f2e3c656de8ad9274cb3a",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-04T07:25:36.428Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "864b4f77-1cc5-45ce-a8ae-66db9093bf6b",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.547Z"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "7e90bd3df81546c051a4646cb08bed277dbb11deb92567c63b590025cf6e7da4",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {},
+        "metrics": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "ended_at": "2026-10-04T07:25:35.676Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        }
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-04T07:25:36.566Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "bcd18744-c468-4c38-90b7-0eec448f989b",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.686Z"
+    },
+    "spawn-next": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "a681a798317c32ce75f83e8959ce8b2f47aea6d6708856fd78c8e64da5b5f685",
+      "payload": {
+        "transcriptPath": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+        "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+        "reason": "other",
+        "input": {
+          "session_id": "6cbb6754-5306-487e-b447-de01f0354d0b",
+          "transcript_path": "/Users/justiceserv/.claude/projects/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b.jsonl",
+          "cwd": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+          "scratchpad_dir": "/private/tmp/claude-501/-Users-justiceserv-Codes-essential-congressional-apps-studyspace/6cbb6754-5306-487e-b447-de01f0354d0b/scratchpad",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "initialTeamNames": [],
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-10-04T07:25:36.705Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "09d793f3-d495-4b3e-ba2c-fae7b612882c",
+        "phase": "terminal",
+        "deadlineAt": "2026-10-04T07:25:45.457Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-10-04T07:25:36.827Z"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "recoverableFailure": {
+    "reason": "actions-settled",
+    "releasedAt": "2026-10-04T07:25:36.846Z",
+    "ownerNonce": "70998397-6f3c-4eff-95da-1a10953256b2"
+  },
+  "completion": {
+    "completedAt": "2026-10-04T07:25:36.846Z",
+    "terminalDigest": "0ecffb601cfca5dbe756a154636e297bc21b14f9d4af9e73515186b15ed9b1e1",
+    "terminalRevision": 62
+  }
+}

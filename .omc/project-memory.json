@@ -1,0 +1,172 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1792233404906,
+  "projectRoot": "/Users/justiceserv/Codes/essential-congressional-apps/studyspace",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.2.3",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.3",
+        "category": "frontend"
+      },
+      {
+        "name": "jest",
+        "version": "29.7.0",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run start",
+    "scripts": {
+      "start": "expo start",
+      "android": "expo start --android",
+      "ios": "expo start --ios",
+      "web": "expo start --web",
+      "lint": "expo lint",
+      "test": "jest",
+      "test:watch": "jest --watchAll",
+      "typecheck": "tsc --noEmit"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": "*.test.ts",
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "__tests__",
+      "assets",
+      "docs",
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "__mocks__": {
+      "path": "__mocks__",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1792233404896,
+      "keyFiles": []
+    },
+    "__tests__": {
+      "path": "__tests__",
+      "purpose": "Test files",
+      "fileCount": 12,
+      "lastAccessed": 1792233404897,
+      "keyFiles": [
+        "bundled-data.test.ts",
+        "crowd-api.test.ts",
+        "crowd-client.test.ts",
+        "hours-time.test.ts",
+        "i18n.test.ts"
+      ]
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 0,
+      "lastAccessed": 1792233404897,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 6,
+      "lastAccessed": 1792233404897,
+      "keyFiles": [
+        "QA.md",
+        "backend-setup.md",
+        "design.md",
+        "gap-analysis.md",
+        "perf.md"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1792233404897,
+      "keyFiles": []
+    },
+    "assets/data": {
+      "path": "assets/data",
+      "purpose": "Data files",
+      "fileCount": 2,
+      "lastAccessed": 1792233404898,
+      "keyFiles": [
+        "stations.json",
+        "venues.json"
+      ]
+    },
+    "src/app": {
+      "path": "src/app",
+      "purpose": "Application code",
+      "fileCount": 8,
+      "lastAccessed": 1792233404898,
+      "keyFiles": [
+        "+not-found.tsx",
+        "_layout.tsx",
+        "blocks.tsx"
+      ]
+    },
+    "src/data": {
+      "path": "src/data",
+      "purpose": "Data files",
+      "fileCount": 6,
+      "lastAccessed": 1792233404898,
+      "keyFiles": [
+        "files.ts",
+        "files.web.ts",
+        "kv.ts"
+      ]
+    },
+    "src/services": {
+      "path": "src/services",
+      "purpose": "Business logic services",
+      "fileCount": 7,
+      "lastAccessed": 1792233404898,
+      "keyFiles": [
+        "backgroundPoll.ts",
+        "crowdClient.ts",
+        "demo.ts"
+      ]
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}

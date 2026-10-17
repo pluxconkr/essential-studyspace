@@ -1,8 +1,6 @@
 # dependencies
 node_modules/
 
-.omc/
-
 # Expo
 .expo/
 dist/
